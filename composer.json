@@ -1,0 +1,39 @@
+{
+    "name": "survos/field-bundle",
+    "description": "Universal field/property metadata attributes for search, grid, and AI — #[Field], Widget enum, and FieldReader.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": ["symfony", "field", "metadata", "grid", "search", "meili", "datatables", "api-platform"],
+    "autoload": {
+        "psr-4": {
+            "Survos\\FieldBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Survos\\FieldBundle\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.4",
+        "symfony/config": "^7.0|^8.0",
+        "symfony/dependency-injection": "^7.0|^8.0",
+        "symfony/http-kernel": "^7.0|^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0|^12.0",
+        "symfony/framework-bundle": "^7.0|^8.0"
+    },
+    "suggest": {
+        "symfony/ai-platform": "Read #[With] constraints (description, example, enum) from symfony/ai",
+        "api-platform/core": "Read #[ApiProperty] and #[Parameter] filter declarations",
+        "doctrine/orm": "Infer property types from #[ORM\\Column]",
+        "survos/api-grid-bundle": "Render FieldDescriptors as DataTables ColumnControl grids",
+        "survos/meili-bundle": "Sync FieldDescriptors to Meilisearch index settings"
+    },
+    "extra": {
+        "symfony": {
+            "require": "^7.0|^8.0"
+        }
+    }
+}
