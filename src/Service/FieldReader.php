@@ -47,6 +47,20 @@ final class FieldReader
         $rc = new \ReflectionClass($class);
         $descriptors = [];
 
+        // MeiliIndex-derived field sets (optional dependency; all empty if bundle absent)
+        $meiliIndex       = $this->readMeiliIndex($rc);
+        $meiliSearchable  = $meiliIndex ? $this->meiliFieldNames($meiliIndex->searchable)  : [];
+        $meiliFilterable  = $meiliIndex ? $this->meiliFieldNames($meiliIndex->filterable)  : [];
+        $meiliSortable    = $meiliIndex ? $this->meiliFieldNames($meiliIndex->sortable)    : [];
+        $meiliAll         = array_unique(array_merge($meiliSearchable, $meiliFilterable, $meiliSortable));
+
+        // ApiPlatform #[ApiFilter] — the server-side ground truth for sort/search/filter capability
+        $apiFilters    = $this->readApiFilters($rc);
+        $apiSortable   = $apiFilters['sortable'];
+        $apiSearchable = $apiFilters['searchable'];
+        $apiFilterable = $apiFilters['filterable'];
+        $apiAll        = array_unique(array_merge($apiSortable, $apiSearchable, $apiFilterable));
+
         // Gather properties and getter methods that carry #[Field], preserving declaration order.
         // Properties from used traits appear first (PHP reflection contract).
         $members = [
@@ -55,18 +69,28 @@ final class FieldReader
         ];
 
         foreach ($members as $member) {
-            $fieldAttr = $member instanceof \ReflectionProperty
-                ? $this->readField($member)
-                : $this->readFieldFromMethod($member);
-            if ($fieldAttr === null) {
-                continue;
-            }
-
+            // Derive name first so we can check MeiliIndex membership.
             $name = $member instanceof \ReflectionProperty
                 ? $member->getName()
                 : lcfirst(substr($member->getName(), 3)); // getAccCount → accCount
 
-            $type = $member instanceof \ReflectionProperty
+            $fieldAttr = $member instanceof \ReflectionProperty
+                ? $this->readField($member)
+                : $this->readFieldFromMethod($member);
+
+            if ($fieldAttr === null) {
+                if (!in_array($name, $meiliAll, true) && !in_array($name, $apiAll, true)) {
+                    continue;
+                }
+                // Synthesize a Field from MeiliIndex and/or ApiFilter metadata.
+                $fieldAttr = new Field(
+                    searchable: in_array($name, $meiliSearchable, true) || in_array($name, $apiSearchable, true),
+                    sortable:   in_array($name, $meiliSortable,   true) || in_array($name, $apiSortable,   true),
+                    filterable: in_array($name, $meiliFilterable,  true) || in_array($name, $apiFilterable,  true),
+                );
+            }
+
+            $type        = $member instanceof \ReflectionProperty
                 ? $this->resolveType($member)
                 : $this->resolveMethodReturnType($member);
             $description = null;
@@ -118,9 +142,9 @@ final class FieldReader
                 transKey:    $fieldAttr->transKey,
                 description: $description,
                 example:     $example,
-                searchable:  $fieldAttr->searchable,
-                sortable:    $fieldAttr->sortable,
-                filterable:  $fieldAttr->filterable,
+                searchable:  $fieldAttr->searchable || in_array($name, $apiSearchable, true),
+                sortable:    $fieldAttr->sortable   || in_array($name, $apiSortable,   true),
+                filterable:  $fieldAttr->filterable || in_array($name, $apiFilterable,  true),
                 widget:      $fieldAttr->widget,
                 facet:       $fieldAttr->facet,
                 visible:     $fieldAttr->visible,
@@ -257,5 +281,64 @@ final class FieldReader
         }
 
         return 'string';
+    }
+
+    /** @return array{sortable: string[], searchable: string[], filterable: string[]} */
+    private function readApiFilters(\ReflectionClass $rc): array
+    {
+        $empty = ['sortable' => [], 'searchable' => [], 'filterable' => []];
+        if (!class_exists(\ApiPlatform\Metadata\ApiFilter::class)) {
+            return $empty;
+        }
+
+        $sortable   = [];
+        $searchable = [];
+        $filterable = [];
+
+        foreach ($rc->getAttributes(\ApiPlatform\Metadata\ApiFilter::class) as $attr) {
+            $filter      = $attr->newInstance();
+            $filterClass = $filter->filterClass ?? '';
+            $properties  = $filter->properties  ?? [];
+
+            $propNames = [];
+            foreach ($properties as $key => $value) {
+                $propNames[] = is_int($key) ? $value : $key;
+            }
+
+            match (true) {
+                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\OrderFilter',  true) => $sortable   = array_merge($sortable,   $propNames),
+                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\SearchFilter', true) => $searchable = array_merge($searchable, $propNames),
+                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\ExactFilter',  true) => $filterable = array_merge($filterable, $propNames),
+                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\RangeFilter',  true) => $filterable = array_merge($filterable, $propNames),
+                default => null,
+            };
+        }
+
+        return [
+            'sortable'   => array_unique($sortable),
+            'searchable' => array_unique($searchable),
+            'filterable' => array_unique($filterable),
+        ];
+    }
+
+    private function readMeiliIndex(\ReflectionClass $rc): ?object
+    {
+        if (!class_exists(\Survos\MeiliBundle\Metadata\MeiliIndex::class)) {
+            return null;
+        }
+        $attrs = $rc->getAttributes(\Survos\MeiliBundle\Metadata\MeiliIndex::class);
+        return $attrs ? $attrs[0]->newInstance() : null;
+    }
+
+    /** @return string[] */
+    private function meiliFieldNames(mixed $value): array
+    {
+        if (empty($value)) {
+            return [];
+        }
+        if (class_exists(\Survos\MeiliBundle\Metadata\Fields::class) && $value instanceof \Survos\MeiliBundle\Metadata\Fields) {
+            return $value->fields;
+        }
+        return array_values(array_filter((array) $value, 'is_string'));
     }
 }
