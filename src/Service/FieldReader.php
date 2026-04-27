@@ -47,13 +47,28 @@ final class FieldReader
         $rc = new \ReflectionClass($class);
         $descriptors = [];
 
-        foreach ($rc->getProperties() as $property) {
-            $fieldAttr = $this->readField($property);
+        // Gather properties and getter methods that carry #[Field], preserving declaration order.
+        // Properties from used traits appear first (PHP reflection contract).
+        $members = [
+            ...$rc->getProperties(),
+            ...array_filter($rc->getMethods(\ReflectionMethod::IS_PUBLIC), fn (\ReflectionMethod $m) => !$m->isStatic() && $m->getNumberOfRequiredParameters() === 0 && str_starts_with($m->getName(), 'get')),
+        ];
+
+        foreach ($members as $member) {
+            $fieldAttr = $member instanceof \ReflectionProperty
+                ? $this->readField($member)
+                : $this->readFieldFromMethod($member);
             if ($fieldAttr === null) {
                 continue;
             }
 
-            $type        = $this->resolveType($property);
+            $name = $member instanceof \ReflectionProperty
+                ? $member->getName()
+                : lcfirst(substr($member->getName(), 3)); // getAccCount → accCount
+
+            $type = $member instanceof \ReflectionProperty
+                ? $this->resolveType($member)
+                : $this->resolveMethodReturnType($member);
             $description = null;
             $example     = null;
             $enum        = [];
@@ -65,13 +80,15 @@ final class FieldReader
             $isUrl       = false;
             $isEmail     = false;
 
-            // Symfony validation constraints (optional — only if symfony/validator is present)
-            $this->readConstraints(
-                $property, $minimum, $maximum, $maxLength, $pattern, $required, $isUrl, $isEmail
-            );
+            // Symfony validation constraints — only applicable to properties
+            if ($member instanceof \ReflectionProperty) {
+                $this->readConstraints(
+                    $member, $minimum, $maximum, $maxLength, $pattern, $required, $isUrl, $isEmail
+                );
+            }
 
             // #[With] from symfony/ai-platform (optional)
-            $with = $this->readWith($property);
+            $with = $member instanceof \ReflectionProperty ? $this->readWith($member) : null;
             if ($with !== null) {
                 $description = $with->description ?? $description;
                 $example     = $with->example     ?? $example;
@@ -81,7 +98,7 @@ final class FieldReader
             }
 
             // #[ApiProperty] from api-platform (optional)
-            $apiProp = $this->readApiProperty($property);
+            $apiProp = $member instanceof \ReflectionProperty ? $this->readApiProperty($member) : null;
             if ($apiProp !== null) {
                 $description ??= $this->extractApiPropertyDescription($apiProp);
                 $example     ??= $this->extractApiPropertyExample($apiProp);
@@ -96,7 +113,7 @@ final class FieldReader
             }
 
             $descriptors[] = new FieldDescriptor(
-                name:        $property->getName(),
+                name:        $name,
                 type:        $type,
                 transKey:    $fieldAttr->transKey,
                 description: $description,
@@ -121,9 +138,12 @@ final class FieldReader
             );
         }
 
-        usort($descriptors, fn (FieldDescriptor $a, FieldDescriptor $b) => $a->order <=> $b->order);
+        // Stable sort: primary key is $order, tiebreaker is declaration index so
+        // "all default (100)" preserves the original property/method order.
+        $indexed = array_map(null, $descriptors, array_keys($descriptors));
+        usort($indexed, fn ($a, $b) => $a[0]->order <=> $b[0]->order ?: $a[1] <=> $b[1]);
 
-        return $descriptors;
+        return array_column($indexed, 0);
     }
 
     private function readConstraints(
@@ -183,6 +203,21 @@ final class FieldReader
     {
         $attrs = $property->getAttributes(Field::class);
         return $attrs ? $attrs[0]->newInstance() : null;
+    }
+
+    private function readFieldFromMethod(\ReflectionMethod $method): ?Field
+    {
+        $attrs = $method->getAttributes(Field::class);
+        return $attrs ? $attrs[0]->newInstance() : null;
+    }
+
+    private function resolveMethodReturnType(\ReflectionMethod $method): string
+    {
+        $type = $method->getReturnType();
+        if ($type instanceof \ReflectionNamedType) {
+            return $type->getName();
+        }
+        return 'string';
     }
 
     private function readWith(\ReflectionProperty $property): ?object
