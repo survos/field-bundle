@@ -22,7 +22,7 @@ final class FieldReaderTest extends TestCase
     public function testReadsFieldAttributes(): void
     {
         $class = new class {
-            #[Field(label: 'Title', searchable: true, sortable: true, order: 10)]
+            #[Field(searchable: true, sortable: true, order: 10)]
             public string $title = '';
 
             #[Field(filterable: true, widget: Widget::Select, facet: true, order: 20)]
@@ -49,7 +49,6 @@ final class FieldReaderTest extends TestCase
         };
 
         $descriptors = $this->reader->getDescriptors($class::class);
-
         self::assertSame('a', $descriptors[0]->name);
         self::assertSame('b', $descriptors[1]->name);
     }
@@ -57,19 +56,43 @@ final class FieldReaderTest extends TestCase
     public function testGetDescriptor(): void
     {
         $class = new class {
-            #[Field(label: 'My Status', filterable: true, widget: Widget::Boolean)]
+            #[Field(filterable: true, widget: Widget::Boolean)]
             public bool $active = true;
         };
 
         $d = $this->reader->getDescriptor($class::class, 'active');
 
         self::assertInstanceOf(FieldDescriptor::class, $d);
-        self::assertSame('My Status', $d->label);
         self::assertSame(Widget::Boolean, $d->widget);
         self::assertSame('bool', $d->type);
     }
 
-    public function testGetDescriptorReturnsNullForUnknownProperty(): void
+    public function testTranslationKeyFallsBackToPropertyName(): void
+    {
+        $class = new class {
+            #[Field]
+            public string $accountType = '';
+        };
+
+        $d = $this->reader->getDescriptor($class::class, 'accountType');
+        self::assertSame('accountType', $d?->getTranslationKey());
+        self::assertSame('Account Type', $d?->getFallbackLabel());
+        self::assertSame('fields', $d?->getTranslationDomain());
+    }
+
+    public function testExplicitTransKeyOverride(): void
+    {
+        $class = new class {
+            #[Field(transKey: 'tenant.status')]
+            public string $status = '';
+        };
+
+        $d = $this->reader->getDescriptor($class::class, 'status');
+        self::assertSame('tenant.status', $d?->getTranslationKey());
+        self::assertSame('Tenant.status', $d?->getFallbackLabel());
+    }
+
+    public function testGetDescriptorReturnsNullForMissingProperty(): void
     {
         $class = new class {
             #[Field]
@@ -90,17 +113,6 @@ final class FieldReaderTest extends TestCase
         self::assertSame(Widget::Boolean, $d?->resolvedWidget());
     }
 
-    public function testGetLabelFallsBackToPropertyName(): void
-    {
-        $class = new class {
-            #[Field]
-            public string $createdAt = '';
-        };
-
-        $d = $this->reader->getDescriptor($class::class, 'createdAt');
-        self::assertSame('CreatedAt', $d?->getLabel());
-    }
-
     public function testResultsAreCached(): void
     {
         $class = new class {
@@ -110,7 +122,6 @@ final class FieldReaderTest extends TestCase
 
         $first  = $this->reader->getDescriptors($class::class);
         $second = $this->reader->getDescriptors($class::class);
-
         self::assertSame($first, $second);
     }
 }

@@ -13,9 +13,10 @@ use Survos\FieldBundle\Model\FieldDescriptor;
  *
  * Sources (all optional except #[Field]):
  *   1. #[Field]                              — always read (our attribute)
- *   2. #[With] from symfony/ai-platform     — description, example, enum, min/max
- *   3. #[ApiProperty] from api-platform     — description, example
- *   4. PHP reflection                       — property name, type
+ *   2. Symfony validation constraints        — #[Url], #[Email], #[NotBlank], #[Length], #[Range], #[Regex]
+ *   3. #[With] from symfony/ai-platform     — description, example, enum, min/max
+ *   4. #[ApiProperty] from api-platform     — description, example
+ *   5. PHP reflection                       — property name, type, backed enum cases
  */
 final class FieldReader
 {
@@ -58,6 +59,16 @@ final class FieldReader
             $enum        = [];
             $minimum     = null;
             $maximum     = null;
+            $maxLength   = null;
+            $pattern     = null;
+            $required    = false;
+            $isUrl       = false;
+            $isEmail     = false;
+
+            // Symfony validation constraints (optional — only if symfony/validator is present)
+            $this->readConstraints(
+                $property, $minimum, $maximum, $maxLength, $pattern, $required, $isUrl, $isEmail
+            );
 
             // #[With] from symfony/ai-platform (optional)
             $with = $this->readWith($property);
@@ -87,7 +98,7 @@ final class FieldReader
             $descriptors[] = new FieldDescriptor(
                 name:        $property->getName(),
                 type:        $type,
-                label:       $fieldAttr->label,
+                transKey:    $fieldAttr->transKey,
                 description: $description,
                 example:     $example,
                 searchable:  $fieldAttr->searchable,
@@ -102,12 +113,70 @@ final class FieldReader
                 enum:        $enum,
                 minimum:     $minimum,
                 maximum:     $maximum,
+                maxLength:   $maxLength,
+                pattern:     $pattern,
+                required:    $required,
+                isUrl:       $isUrl,
+                isEmail:     $isEmail,
             );
         }
 
         usort($descriptors, fn (FieldDescriptor $a, FieldDescriptor $b) => $a->order <=> $b->order);
 
         return $descriptors;
+    }
+
+    private function readConstraints(
+        \ReflectionProperty $property,
+        int|float|null &$minimum,
+        int|float|null &$maximum,
+        ?int &$maxLength,
+        ?string &$pattern,
+        bool &$required,
+        bool &$isUrl,
+        bool &$isEmail,
+    ): void {
+        if (!class_exists(\Symfony\Component\Validator\Constraints\NotBlank::class)) {
+            return;
+        }
+
+        foreach ($property->getAttributes() as $attr) {
+            $name = $attr->getName();
+            switch ($name) {
+                case \Symfony\Component\Validator\Constraints\NotBlank::class:
+                    $required = true;
+                    break;
+
+                case \Symfony\Component\Validator\Constraints\Url::class:
+                    $isUrl = true;
+                    break;
+
+                case \Symfony\Component\Validator\Constraints\Email::class:
+                    $isEmail = true;
+                    break;
+
+                case \Symfony\Component\Validator\Constraints\Length::class:
+                    $args = $attr->getArguments();
+                    $maxLength ??= $args['max'] ?? $args[1] ?? null;
+                    break;
+
+                case \Symfony\Component\Validator\Constraints\Range::class:
+                    $args = $attr->getArguments();
+                    $minimum ??= $args['min'] ?? $args[0] ?? null;
+                    $maximum ??= $args['max'] ?? $args[1] ?? null;
+                    break;
+
+                case \Symfony\Component\Validator\Constraints\Positive::class:
+                case \Symfony\Component\Validator\Constraints\PositiveOrZero::class:
+                    $minimum ??= ($name === \Symfony\Component\Validator\Constraints\PositiveOrZero::class) ? 0 : 1;
+                    break;
+
+                case \Symfony\Component\Validator\Constraints\Regex::class:
+                    $args = $attr->getArguments();
+                    $pattern ??= $args['pattern'] ?? $args[0] ?? null;
+                    break;
+            }
+        }
     }
 
     private function readField(\ReflectionProperty $property): ?Field

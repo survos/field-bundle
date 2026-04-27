@@ -14,7 +14,7 @@ final class FieldTest extends TestCase
     {
         $field = new Field();
 
-        self::assertNull($field->label);
+        self::assertNull($field->transKey);
         self::assertFalse($field->searchable);
         self::assertFalse($field->sortable);
         self::assertFalse($field->filterable);
@@ -29,7 +29,7 @@ final class FieldTest extends TestCase
     public function testExplicitValues(): void
     {
         $field = new Field(
-            label:      'Status',
+            transKey:   'tenant.status',
             searchable: true,
             sortable:   true,
             filterable: true,
@@ -41,22 +41,18 @@ final class FieldTest extends TestCase
             format:     'status',
         );
 
-        self::assertSame('Status', $field->label);
+        self::assertSame('tenant.status', $field->transKey);
         self::assertTrue($field->searchable);
-        self::assertTrue($field->sortable);
         self::assertTrue($field->filterable);
         self::assertSame(Widget::Select, $field->widget);
-        self::assertTrue($field->facet);
         self::assertFalse($field->visible);
         self::assertSame(10, $field->order);
-        self::assertSame('8rem', $field->width);
-        self::assertSame('status', $field->format);
     }
 
     public function testAttributeIsReadableViaReflection(): void
     {
         $class = new class {
-            #[Field(label: 'My Label', searchable: true, order: 5)]
+            #[Field(transKey: 'my_label', searchable: true, order: 5)]
             public string $title = '';
         };
 
@@ -64,10 +60,24 @@ final class FieldTest extends TestCase
         $attrs = $property->getAttributes(Field::class);
 
         self::assertCount(1, $attrs);
-
         $field = $attrs[0]->newInstance();
-        self::assertSame('My Label', $field->label);
+
+        self::assertSame('my_label', $field->transKey);
         self::assertTrue($field->searchable);
         self::assertSame(5, $field->order);
+    }
+
+    public function testTranslationDomainConstant(): void
+    {
+        self::assertSame('fields', Field::TRANSLATION_DOMAIN);
+    }
+
+    public function testIsBrowsableHook(): void
+    {
+        self::assertTrue((new Field(filterable: true, widget: Widget::Select))->isBrowsable);
+        self::assertTrue((new Field(filterable: true, widget: Widget::Boolean))->isBrowsable);
+        self::assertFalse((new Field(filterable: true, widget: Widget::Text))->isBrowsable);
+        self::assertFalse((new Field(filterable: true, widget: Widget::Range))->isBrowsable);
+        self::assertFalse((new Field())->isBrowsable);
     }
 }

@@ -32,4 +32,13 @@ final class WidgetTest extends TestCase
         self::assertContains('date',    $cases);
         self::assertContains('boolean', $cases);
     }
+
+    public function testIsBrowsable(): void
+    {
+        self::assertTrue(Widget::Select->isBrowsable());
+        self::assertTrue(Widget::Boolean->isBrowsable());
+        self::assertFalse(Widget::Text->isBrowsable());
+        self::assertFalse(Widget::Range->isBrowsable());
+        self::assertFalse(Widget::Date->isBrowsable());
+    }
 }

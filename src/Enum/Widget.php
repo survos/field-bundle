@@ -19,4 +19,17 @@ enum Widget: string
     case Range   = 'range';   // numeric range with min/max (< >)
     case Date    = 'date';    // date / datetime range picker
     case Boolean = 'boolean'; // true / false toggle
+
+    /**
+     * Whether this widget renders as a list of selectable values
+     * (searchList in ColumnControl, RefinementList/Toggle in Meilisearch).
+     * Range and Date are continuous controls, not lists.
+     */
+    public function isBrowsable(): bool
+    {
+        return match ($this) {
+            self::Select, self::Boolean => true,
+            default                     => false,
+        };
+    }
 }

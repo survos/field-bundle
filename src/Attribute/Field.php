@@ -9,6 +9,9 @@ use Survos\FieldBundle\Enum\Widget;
 /**
  * Declares how a property behaves in search, grid, and filter contexts.
  *
+ * Labels are derived from the property name (TitleCase) and resolved through
+ * the 'fields' translation domain — set $transKey only to override the key.
+ *
  * This attribute is intentionally orthogonal to:
  *   - #[ApiProperty]  → OpenAPI / API documentation  (api-platform)
  *   - #[With]         → JSON Schema constraints for LLMs (symfony/ai)
@@ -23,17 +26,23 @@ use Survos\FieldBundle\Enum\Widget;
 #[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD)]
 final class Field
 {
-    public function __construct(
-        /** Human-readable column/field label. Defaults to the property name if null. */
-        public readonly ?string $label = null,
+    public const TRANSLATION_DOMAIN = 'fields';
 
-        /** Include in full-text search. Maps to DataTables search input / Meili searchable fields. */
+    public function __construct(
+        /**
+         * Override the translation key used to resolve the display label.
+         * Defaults to the property name; looked up in the 'fields' translation domain.
+         * Leave null to use the auto-generated TitleCase fallback.
+         */
+        public readonly ?string $transKey = null,
+
+        /** Include in full-text search. Maps to DataTables search / Meili searchable fields. */
         public readonly bool $searchable = false,
 
         /** Allow ordering by this field. Maps to DataTables order / Meili sortable fields. */
         public readonly bool $sortable = false,
 
-        /** Expose a filter control for this field. Determines which $widget is rendered. */
+        /** Expose a filter control. Determines which $widget is rendered. */
         public readonly bool $filterable = false,
 
         /**
@@ -46,10 +55,10 @@ final class Field
          */
         public readonly ?Widget $widget = null,
 
-        /** Include in the facet panel (Meilisearch sidebar, SearchPanes, UX-Search refinements). */
+        /** Include in the facet panel (Meilisearch sidebar, ColumnControl searchList, UX-Search refinements). */
         public readonly bool $facet = false,
 
-        /** Show this field by default. Hidden fields are still available via column toggle. */
+        /** Show this field by default. Hidden fields remain available via column toggle. */
         public readonly bool $visible = true,
 
         /** Display position (lower = further left). */
@@ -61,8 +70,12 @@ final class Field
         /**
          * Display format hint for the renderer.
          * Common values: 'date', 'datetime', 'currency', 'percent', 'bytes', 'boolean'.
-         * Renderers may define additional format tokens.
          */
         public readonly ?string $format = null,
     ) {}
+
+    /** True when the widget renders as a selectable list (Select, Boolean). */
+    public bool $isBrowsable {
+        get => $this->widget?->isBrowsable() ?? false;
+    }
 }
