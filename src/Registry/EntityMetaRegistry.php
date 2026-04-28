@@ -12,10 +12,27 @@ use Survos\FieldBundle\Model\EntityMetaDescriptor;
  */
 final class EntityMetaRegistry
 {
+    /** @var array<class-string, EntityMetaDescriptor> */
+    private readonly array $byClass;
+
+    /** @var array<string, EntityMetaDescriptor[]> */
+    private readonly array $byGroup;
+
     /** @param EntityMetaDescriptor[] $descriptors */
     public function __construct(
         private readonly array $descriptors = [],
-    ) {}
+    ) {
+        $byClass = [];
+        $byGroup = [];
+
+        foreach ($descriptors as $descriptor) {
+            $byClass[$descriptor->class] = $descriptor;
+            $byGroup[$descriptor->group][] = $descriptor;
+        }
+
+        $this->byClass = $byClass;
+        $this->byGroup = $byGroup;
+    }
 
     /** @return EntityMetaDescriptor[] */
     public function getAll(): array
@@ -31,23 +48,18 @@ final class EntityMetaRegistry
 
     public function get(string $class): ?EntityMetaDescriptor
     {
-        foreach ($this->descriptors as $d) {
-            if ($d->class === $class) {
-                return $d;
-            }
-        }
-        return null;
+        return $this->byClass[$class] ?? null;
     }
 
     /** @return string[] */
     public function getGroups(): array
     {
-        return array_values(array_unique(array_map(fn ($d) => $d->group, $this->descriptors)));
+        return array_keys($this->byGroup);
     }
 
     /** @return EntityMetaDescriptor[] */
     public function getByGroup(string $group): array
     {
-        return array_values(array_filter($this->descriptors, fn ($d) => $d->group === $group));
+        return $this->byGroup[$group] ?? [];
     }
 }
