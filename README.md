@@ -79,3 +79,7 @@ The `Field` attribute and `Widget` enum have no external dependencies — just P
 ```bash
 composer require survos/field-bundle
 ```
+
+## Further reading
+
+- [`docs/CONTROLLERS.md`](docs/CONTROLLERS.md) — naming and organization convention for controllers in survos apps. Pairs naturally with `#[RouteMeta]`, `#[ControllerMeta]`, and `#[RouteIdentity]`.
