@@ -12,6 +12,8 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 
+use function Symfony\Component\String\u;
+
 /**
  * Builds the EntityMetaRegistry from the entity atlas.
  *
@@ -54,6 +56,8 @@ final class EntityMetaPass implements CompilerPassInterface
                 adminBrowsable: $meta->adminBrowsable,
                 hasApiResource: $entry->hasAttribute('ApiPlatform\\Metadata\\ApiResource'),
                 hasMeiliIndex:  $entry->hasAttribute('Survos\\MeiliBundle\\Metadata\\MeiliIndex'),
+                code:           self::deriveCode($entry->fqcn, $entry->shortName),
+                globalKey:      self::deriveGlobalKey($entry->fqcn),
             );
         }
 
@@ -84,7 +88,34 @@ final class EntityMetaPass implements CompilerPassInterface
             '$adminBrowsable' => $d->adminBrowsable,
             '$hasApiResource' => $d->hasApiResource,
             '$hasMeiliIndex'  => $d->hasMeiliIndex,
+            '$code'           => $d->code,
+            '$globalKey'      => $d->globalKey,
         ]);
+    }
+
+    /**
+     * Mirror SurvosUtils::entityCode() without depending on core-bundle.
+     * App\Entity\Song -> "app_song"; Survos\PixieBundle\Entity\Foo -> "pixie_foo".
+     */
+    private static function deriveCode(string $fqcn, string $shortName): string
+    {
+        $parts = explode('\\', ltrim($fqcn, '\\'));
+        $prefix = 'App';
+        foreach ($parts as $part) {
+            if ($part === 'App') { $prefix = 'App'; break; }
+            if (str_ends_with($part, 'Bundle')) {
+                $prefix = substr($part, 0, -6);
+                break;
+            }
+        }
+
+        return u($prefix)->snake()->toString() . '_' . u($shortName)->snake()->toString();
+    }
+
+    /** App\Entity\Song -> "APP_ENTITY_SONG"; Survos\PixieBundle\Entity\Foo -> "SURVOS_PIXIE_BUNDLE_ENTITY_FOO". */
+    private static function deriveGlobalKey(string $fqcn): string
+    {
+        return u(ltrim($fqcn, '\\'))->replace('\\', '_')->snake()->upper()->toString();
     }
 
     /** @return list<string> */

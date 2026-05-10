@@ -15,6 +15,9 @@ final class EntityMetaRegistry
     /** @var array<class-string, EntityMetaDescriptor> */
     private readonly array $byClass;
 
+    /** @var array<string, EntityMetaDescriptor> */
+    private readonly array $byCode;
+
     /** @var array<string, EntityMetaDescriptor[]> */
     private readonly array $byGroup;
 
@@ -23,14 +26,19 @@ final class EntityMetaRegistry
         private readonly array $descriptors = [],
     ) {
         $byClass = [];
+        $byCode  = [];
         $byGroup = [];
 
         foreach ($descriptors as $descriptor) {
             $byClass[$descriptor->class] = $descriptor;
+            if ($descriptor->code !== '') {
+                $byCode[$descriptor->code] = $descriptor;
+            }
             $byGroup[$descriptor->group][] = $descriptor;
         }
 
         $this->byClass = $byClass;
+        $this->byCode  = $byCode;
         $this->byGroup = $byGroup;
     }
 
@@ -49,6 +57,11 @@ final class EntityMetaRegistry
     public function get(string $class): ?EntityMetaDescriptor
     {
         return $this->byClass[$class] ?? null;
+    }
+
+    public function getByCode(string $code): ?EntityMetaDescriptor
+    {
+        return $this->byCode[$code] ?? null;
     }
 
     /** @return string[] */

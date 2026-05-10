@@ -21,6 +21,10 @@ final class EntityMetaDescriptor
         public readonly bool    $adminBrowsable = true,
         public readonly bool    $hasApiResource = false,
         public readonly bool    $hasMeiliIndex  = false,
+        /** snake_case routing code, e.g. "app_song" / "pixie_foo". Computed at compile time. */
+        public readonly string  $code           = '',
+        /** Twig globals key, e.g. "APP_ENTITY_SONG". Computed at compile time. */
+        public readonly string  $globalKey      = '',
     ) {}
 
     public function getShortName(): string

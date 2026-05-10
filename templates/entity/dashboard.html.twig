@@ -1,0 +1,147 @@
+{% extends "@SurvosTabler/layout/base.html.twig" %}
+
+{% block title %}{{ descriptor.label }}{% endblock %}
+
+{% block page_content %}
+    <div class="container-xl py-3">
+
+        <div class="d-flex align-items-center mb-4">
+            {% if descriptor.icon %}
+                {{ descriptor.icon }}
+                {{ ux_icon(descriptor.icon) }}
+{#                <span class="me-3 fs-1">{{ ux_icon(descriptor.icon) }}</span>#}
+            {% endif %}
+            <div>
+                <h1 class="mb-0">{{ descriptor.label }}</h1>
+                <div class="text-muted small">
+                    {{ descriptor.group }}
+                    <span class="mx-1">·</span>
+                    <code>{{ descriptor.code }}</code>
+                    <span class="mx-1">·</span>
+                    <code>{{ descriptor.class }}</code>
+                </div>
+                {% if descriptor.description %}
+                    <p class="mt-2 mb-0">{{ descriptor.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row g-3">
+
+            {# Doctrine #}
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            {{ ux_icon('database') }}
+                            Database
+                        </h3>
+
+                    </div>
+                    <div class="card-body">
+                        {% if rowCount is not null %}
+                            <div class="display-5 fw-bold">{{ rowCount|number_format }}</div>
+                            <div class="text-muted">rows</div>
+                        {% else %}
+                            <div class="text-muted">No Doctrine entity manager configured for this class.</div>
+                        {% endif %}
+
+                        {% if browseUrl %}
+                            <div class="mt-4">
+                                <a href="{{ browseUrl }}" class="btn btn-primary">
+                                    Browse {{ descriptor.label }} via ApiGrid
+                                </a>
+                            </div>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
+
+            {# Meilisearch #}
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            {{ ux_icon('meili') }}
+                            Meilisearch
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {% if descriptor.hasMeiliIndex %}
+                            {% if meili %}
+                                <div>Index: <code>{{ meili.baseName }}</code></div>
+                                {% if meili.searchUrl or meili.chatUrls is not empty %}
+                                    <div class="mt-3 d-flex flex-wrap gap-2">
+                                        {% if meili.searchUrl %}
+                                            <a href="{{ meili.searchUrl }}" class="btn btn-sm btn-outline-primary">
+                                                Search
+                                            </a>
+                                        {% endif %}
+                                        {% for chat in meili.chatUrls %}
+                                            <a href="{{ chat.url }}" class="btn btn-sm btn-outline-secondary">
+                                                Chat{% if meili.chatUrls|length > 1 %}: {{ chat.workspace }}{% endif %}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% elseif not meiliRegistryAvailable %}
+                                <div class="text-muted">
+                                    Has <code>#[MeiliIndex]</code>, but the MeiliRegistry service is not available.
+                                    Install and enable <code>survos/meili-bundle</code>, then clear the container cache.
+                                </div>
+                            {% else %}
+                                <div class="text-muted">
+                                    Has <code>#[MeiliIndex]</code>, but this class is not in the compiled MeiliRegistry.
+                                    Run <code>bin/console cache:pool:clear --all</code> so the Meili compiler pass can rebuild,
+                                    then inspect it with <code>bin/console meili:registry:report</code>.
+                                    If the database registry is empty or stale, load it with <code>bin/console meili:registry:sync</code>.
+                                </div>
+                            {% endif %}
+                            {% if path('meili_admin') is defined %}{# best-effort link, see registry route #}{% endif %}
+                        {% else %}
+                            <div class="text-muted">No #[MeiliIndex] attribute on this class.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# ux-search #}
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            {{ ux_icon('search') }}
+                            ux-search
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-muted">TODO: detect mezcalito/ux-search configurations for this class.</div>
+                    </div>
+                </div>
+            </div>
+
+            {# API Platform #}
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">
+                            {{ ux_icon('api') }}
+                            API Platform
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {% if descriptor.hasApiResource %}
+                            <div class="text-success">#[ApiResource] declared.</div>
+                        {% else %}
+                            <div class="text-muted">No #[ApiResource] attribute.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+    </div>
+{% endblock %}
