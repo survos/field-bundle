@@ -150,6 +150,7 @@ final class FieldReader
                 visible:     $fieldAttr->visible,
                 order:       $fieldAttr->order,
                 width:       $fieldAttr->width,
+                group:       $fieldAttr->group,
                 format:      $fieldAttr->format,
                 enum:        $enum,
                 minimum:     $minimum,

@@ -67,6 +67,9 @@ final class Field
         /** CSS width hint, e.g. '8rem', '120px'. Passed to the grid renderer. */
         public readonly ?string $width = null,
 
+        /** Optional column group label for table headers, e.g. "Dimensions". */
+        public readonly ?string $group = null,
+
         /**
          * Display format hint for the renderer.
          * Common values: 'date', 'datetime', 'currency', 'percent', 'bytes', 'boolean'.
