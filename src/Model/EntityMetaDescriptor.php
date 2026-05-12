@@ -25,26 +25,10 @@ final class EntityMetaDescriptor
         public readonly string  $code           = '',
         /** Twig globals key, e.g. "APP_ENTITY_SONG". Computed at compile time. */
         public readonly string  $globalKey      = '',
-        /** @var array<string, EntityViewDescriptor> */
-        public readonly array   $views          = [],
-        public readonly string  $defaultView    = 'table',
     ) {}
 
     public function getShortName(): string
     {
         return substr(strrchr($this->class, '\\') ?: $this->class, 1);
-    }
-
-    public function view(?string $code = null): ?EntityViewDescriptor
-    {
-        $code ??= $this->defaultView;
-
-        return $this->views[$code] ?? null;
-    }
-
-    /** @return EntityViewDescriptor[] */
-    public function viewChoices(): array
-    {
-        return array_values($this->views);
     }
 }

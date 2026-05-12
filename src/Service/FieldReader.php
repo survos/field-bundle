@@ -150,7 +150,6 @@ final class FieldReader
                 visible:     $fieldAttr->visible,
                 order:       $fieldAttr->order,
                 width:       $fieldAttr->width,
-                group:       $fieldAttr->group,
                 format:      $fieldAttr->format,
                 enum:        $enum,
                 minimum:     $minimum,
@@ -160,6 +159,7 @@ final class FieldReader
                 required:    $required,
                 isUrl:       $isUrl,
                 isEmail:     $isEmail,
+                group:       $fieldAttr->group,
             );
         }
 

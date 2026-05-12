@@ -31,7 +31,6 @@ final class FieldDescriptor
         public readonly bool    $visible      = true,
         public readonly int     $order        = 100,
         public readonly ?string $width        = null,
-        public readonly ?string $group        = null,
         public readonly ?string $format       = null,
         /** @var list<scalar|null> */
         public readonly array   $enum         = [],
@@ -42,6 +41,7 @@ final class FieldDescriptor
         public readonly bool           $required  = false,
         public readonly bool           $isUrl     = false,
         public readonly bool           $isEmail   = false,
+        public readonly ?string        $group     = null,
     ) {}
 
     /**
