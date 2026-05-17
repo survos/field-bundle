@@ -9,6 +9,7 @@ use Survos\FieldBundle\Command\MetaExportCommand;
 use Survos\FieldBundle\Compiler\EntityMetaPass;
 use Survos\FieldBundle\Compiler\RouteMetaPass;
 use Survos\FieldBundle\Controller\EntityDashboardController;
+use Survos\FieldBundle\Menu\FieldMenuSubscriber;
 use Survos\FieldBundle\Registry\EntityMetaRegistry;
 use Survos\FieldBundle\Registry\RouteMetaRegistry;
 use Survos\FieldBundle\Service\FieldReader;
@@ -52,6 +53,13 @@ class SurvosFieldBundle extends AbstractBundle
             // need for #[MapEntity(mapping: ...)] on every controller.
             ->set(RouteIdentityValueResolver::class);
 
+        if (class_exists(\Survos\TablerBundle\Event\MenuEvent::class)) {
+            $container->services()
+                ->set(FieldMenuSubscriber::class)
+                ->autowire()
+                ->autoconfigure();
+        }
+
         // Controller — registered via $builder so we can pass a NULL_ON_INVALID_REFERENCE
         // for the optional MeiliRegistry service (lives in survos/meili-bundle).
         $builder->autowire(EntityDashboardController::class)
@@ -59,6 +67,10 @@ class SurvosFieldBundle extends AbstractBundle
             ->setAutoconfigured(true)
             ->setPublic(true)
             ->addTag('controller.service_arguments')
+            ->setArgument(
+                '$router',
+                new Reference('Symfony\\Component\\Routing\\RouterInterface', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+            )
             ->setArgument(
                 '$meiliRegistry',
                 new Reference('Survos\\MeiliBundle\\Registry\\MeiliRegistry', ContainerInterface::NULL_ON_INVALID_REFERENCE),

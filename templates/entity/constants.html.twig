@@ -1,0 +1,69 @@
+{% extends "@SurvosTabler/layout/base.html.twig" %}
+
+{% block title %}Entity Constants{% endblock %}
+
+{% block page_content %}
+    <div class="container-xl py-3">
+        <div class="page-header d-print-none mb-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="page-title">Entity Constants</h1>
+                    <div class="text-muted mt-1">
+                        Registered Twig globals and public entity constants generated from <code>#[EntityMeta]</code>.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Constant</th>
+                        <th>Value</th>
+                        <th>Type</th>
+                        <th>Entity</th>
+                        <th>Group</th>
+                        <th>Description</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in rows %}
+                        {% set descriptor = row.descriptor %}
+                        <tr>
+                            <td><code>{{ row.name }}</code></td>
+                            <td>
+                                {% if row.value is iterable %}
+                                    <code>{{ row.value|json_encode }}</code>
+                                {% else %}
+                                    <code>{{ row.value }}</code>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge text-bg-secondary">{{ row.type }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ descriptor.label }}</div>
+                                <div class="text-muted small"><code>{{ descriptor.class }}</code></div>
+                            </td>
+                            <td>{{ descriptor.group }}</td>
+                            <td class="text-muted">{{ descriptor.description }}</td>
+                            <td class="text-end">
+                                <a href="{{ path('survos_entity_dashboard', {code: descriptor.code}) }}" class="btn btn-sm btn-outline-primary">
+                                    Inspect
+                                </a>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-muted">No <code>#[EntityMeta]</code> classes are registered.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

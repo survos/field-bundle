@@ -29,7 +29,7 @@ final class EntityDashboardController extends AbstractController
 {
     public function __construct(
         private readonly EntityMetaRegistry $registry,
-        private readonly RouterInterface    $router,
+        private readonly ?RouterInterface   $router = null,
         private readonly ?ManagerRegistry   $doctrine = null,
         // MeiliRegistry lives in survos/meili-bundle; injected via service id by
         // the bundle's service definition with NULL_ON_INVALID_REFERENCE so that
@@ -52,6 +52,62 @@ final class EntityDashboardController extends AbstractController
             'meili'                  => $this->resolveMeili($descriptor->class),
             'meiliRegistryAvailable' => $this->meiliRegistry !== null,
             'browseUrl'              => $this->resolveBrowseUrl($code),
+        ]);
+    }
+
+    #[Route('/entity-constants', name: 'survos_entity_constants', methods: ['GET'])]
+    public function constants(): Response
+    {
+        $shortKeys = [];
+        foreach ($this->registry->getAll() as $descriptor) {
+            $shortKeys[$this->shortGlobalKey($descriptor->class)][] = $descriptor->class;
+        }
+
+        $rows = [];
+        foreach ($this->registry->getAll() as $descriptor) {
+            $keys = [];
+            if ($descriptor->globalKey !== '') {
+                $keys[] = [
+                    'name' => $descriptor->globalKey,
+                    'type' => 'class',
+                    'value' => $descriptor->class,
+                ];
+            }
+
+            $shortKey = $this->shortGlobalKey($descriptor->class);
+            if (count(array_unique($shortKeys[$shortKey] ?? [])) === 1 && $shortKey !== $descriptor->globalKey) {
+                $keys[] = [
+                    'name' => $shortKey,
+                    'type' => 'class alias',
+                    'value' => $descriptor->class,
+                ];
+            }
+
+            foreach ((new \ReflectionClass($descriptor->class))->getReflectionConstants(\ReflectionClassConstant::IS_PUBLIC) as $constant) {
+                foreach ($keys as $key) {
+                    $rows[] = [
+                        'name' => $key['name'] . '_' . $constant->getName(),
+                        'type' => 'constant',
+                        'value' => $constant->getValue(),
+                        'descriptor' => $descriptor,
+                    ];
+                }
+            }
+
+            foreach ($keys as $key) {
+                $rows[] = [
+                    'name' => $key['name'],
+                    'type' => $key['type'],
+                    'value' => $key['value'],
+                    'descriptor' => $descriptor,
+                ];
+            }
+        }
+
+        usort($rows, static fn (array $a, array $b): int => $a['name'] <=> $b['name']);
+
+        return $this->render('@SurvosField/entity/constants.html.twig', [
+            'rows' => $rows,
         ]);
     }
 
@@ -148,6 +204,9 @@ final class EntityDashboardController extends AbstractController
      */
     private function routeUrl(string $route, array $parameters): ?string
     {
+        if (!$this->router) {
+            return null;
+        }
         if (!$this->router->getRouteCollection()->get($route)) {
             return null;
         }
@@ -161,11 +220,22 @@ final class EntityDashboardController extends AbstractController
 
     private function resolveBrowseUrl(string $code): ?string
     {
+        if (!$this->router) {
+            return null;
+        }
         $route = $this->router->getRouteCollection()->get('survos_admin_browse');
         if (!$route) {
             return null;
         }
 
         return $this->router->generate('survos_admin_browse', ['code' => $code]);
+    }
+
+    /** @param class-string $class */
+    private function shortGlobalKey(string $class): string
+    {
+        $shortName = (new \ReflectionClass($class))->getShortName();
+
+        return 'APP_ENTITY_' . strtoupper((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName));
     }
 }

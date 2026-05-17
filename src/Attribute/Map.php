@@ -10,7 +10,7 @@ namespace Survos\FieldBundle\Attribute;
  * The source-mapping options are intentionally lightweight so import-style
  * mappers can consume them without requiring a full import pipeline package.
  */
-#[\Attribute(\Attribute::TARGET_PROPERTY)]
+#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::IS_REPEATABLE)]
 class Map
 {
     /**
@@ -20,8 +20,8 @@ class Map
      * @param string|null $if Conditional: 'isset' = skip if resolved value is null.
      * @param string|null $delim Delimiter for splitting a string into an array property.
      * @param int $priority Mapper priority when multiple sources exist; higher wins.
-     * @param string[] $when Only apply when context['pixie'] is in this list.
-     * @param string[] $except Skip when context['pixie'] is in this list.
+     * @param string[] $when Only apply when context['dataset'] is in this list.
+     * @param string[] $except Skip when context['dataset'] is in this list.
      * @param bool $facet Meilisearch filterableAttributes.
      * @param bool $sortable Meilisearch sortableAttributes.
      * @param bool $searchable Meilisearch searchableAttributes.
