@@ -94,9 +94,27 @@ final class EntityMetaPass implements CompilerPassInterface
     }
 
     /**
-     * Mirror SurvosUtils::entityCode() without depending on core-bundle.
+     * Canonical entity code derivation.
      * App\Entity\Song -> "app_song"; Survos\PixieBundle\Entity\Foo -> "pixie_foo".
+     *
+     * @param class-string $fqcn
      */
+    public static function entityCode(string $fqcn): string
+    {
+        $parts = explode('\\', ltrim($fqcn, '\\'));
+        $prefix = 'App';
+        foreach ($parts as $part) {
+            if ($part === 'App') { $prefix = 'App'; break; }
+            if (str_ends_with($part, 'Bundle')) {
+                $prefix = substr($part, 0, -6);
+                break;
+            }
+        }
+        $shortName = (new \ReflectionClass($fqcn))->getShortName();
+
+        return u($prefix)->snake()->toString() . '_' . u($shortName)->snake()->toString();
+    }
+
     private static function deriveCode(string $fqcn, string $shortName): string
     {
         $parts = explode('\\', ltrim($fqcn, '\\'));

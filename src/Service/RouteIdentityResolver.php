@@ -142,19 +142,12 @@ final class RouteIdentityResolver
      */
     private static function legacyFallback(object $entity, array $extras): array
     {
-        if (\interface_exists(\Survos\CoreBundle\Entity\RouteParametersInterface::class)
-            && $entity instanceof \Survos\CoreBundle\Entity\RouteParametersInterface
-        ) {
+        if ($entity instanceof \Survos\FieldBundle\Entity\RouteParametersInterface) {
             return $entity->getRp($extras);
         }
 
-        if (method_exists($entity, 'getId')) {
-            $short = (new \ReflectionClass($entity))->getShortName();
-            return array_merge([lcfirst($short) . 'Id' => $entity->getId()], $extras);
-        }
-
         throw new \LogicException(sprintf(
-            'No #[RouteIdentity] on %s and no getId() to fall back on. Add the attribute or implement RouteParametersInterface.',
+            '%s is missing #[RouteIdentity]. Add the attribute and use RouteIdentityTrait.',
             $entity::class,
         ));
     }
