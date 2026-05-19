@@ -160,7 +160,6 @@ final class FieldReader
                 required:    $required,
                 isUrl:       $isUrl,
                 isEmail:     $isEmail,
-                group:       $fieldAttr->group,
             );
         }
 

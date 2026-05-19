@@ -42,7 +42,6 @@ final class FieldDescriptor
         public readonly bool           $required  = false,
         public readonly bool           $isUrl     = false,
         public readonly bool           $isEmail   = false,
-        public readonly ?string        $group     = null,
     ) {}
 
     /**
