@@ -68,17 +68,17 @@ final class Field
         public readonly ?string $width = null,
 
         /**
-         * Display format hint for the renderer.
-         * Common values: 'date', 'datetime', 'currency', 'percent', 'bytes', 'boolean'.
-         */
-        public readonly ?string $format = null,
-
-        /**
          * Column group label. Columns sharing the same group are rendered under a shared
          * spanning header row in the grid (e.g. 'Dimensions', 'Engine Info').
          * Ungrouped columns span both header rows (rowspan="2").
          */
         public readonly ?string $group = null,
+
+        /**
+         * Display format hint for the renderer.
+         * Common values: 'date', 'datetime', 'currency', 'percent', 'bytes', 'boolean'.
+         */
+        public readonly ?string $format = null,
     ) {}
 
     /** True when the widget renders as a selectable list (Select, Boolean). */

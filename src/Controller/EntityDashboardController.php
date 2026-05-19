@@ -19,7 +19,7 @@ use Symfony\Component\Routing\RouterInterface;
  *   - Doctrine row count (when an EM is configured for it)
  *   - Meilisearch index info (when meili-bundle is installed and the class
  *     has #[MeiliIndex])
- *   - ux-search availability (when mezcalito/ux-search is installed) — TODO
+ *   - ux-search availability (when survos/search-bundle is installed)
  *   - Browse link (when api-grid-bundle is installed)
  *
  * The `$code` route param is the snake-cased identity computed at compile
@@ -36,6 +36,7 @@ final class EntityDashboardController extends AbstractController
         // field-bundle stays usable without meili-bundle.
         private readonly ?object            $meiliRegistry = null,
         private readonly ?object            $chatWorkspaceResolver = null,
+        private readonly ?object            $uxSearchRegistry = null,
     ) {}
 
     #[Route('/entity/{code}', name: 'survos_entity_dashboard', methods: ['GET'])]
@@ -51,6 +52,8 @@ final class EntityDashboardController extends AbstractController
             'rowCount'               => $this->resolveRowCount($descriptor->class),
             'meili'                  => $this->resolveMeili($descriptor->class),
             'meiliRegistryAvailable' => $this->meiliRegistry !== null,
+            'uxSearch'               => $this->resolveUxSearch($descriptor->class, $descriptor->code),
+            'uxSearchRegistryAvailable' => $this->uxSearchRegistry !== null,
             'browseUrl'              => $this->resolveBrowseUrl($code),
         ]);
     }
@@ -229,6 +232,27 @@ final class EntityDashboardController extends AbstractController
         }
 
         return $this->router->generate('survos_admin_browse', ['code' => $code]);
+    }
+
+    /**
+     * @return array{name: string, url: ?string, hitTemplate: ?string}|null
+     */
+    private function resolveUxSearch(string $class, string $code): ?array
+    {
+        if (!$this->uxSearchRegistry || !method_exists($this->uxSearchRegistry, 'forClass')) {
+            return null;
+        }
+
+        $search = $this->uxSearchRegistry->forClass($class);
+        if (!$search) {
+            return null;
+        }
+
+        return [
+            'name' => $search->name ?? $code,
+            'url' => $this->routeUrl('survos_entity_ux_search', ['code' => $code]),
+            'hitTemplate' => $search->hitTemplate ?? null,
+        ];
     }
 
     /** @param class-string $class */

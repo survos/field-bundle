@@ -38,5 +38,25 @@ final class EntityMeta
 
         /** Whether to include this entity in the admin navbar and dashboard. */
         public readonly bool $adminBrowsable = true,
+
+        /**
+         * Named browse views for development/admin browsing.
+         *
+         * Examples:
+         *  views: [
+         *      'table' => ['label' => 'Table'],
+         *      'quick' => [
+         *          'label' => 'Quick',
+         *          'template' => 'admin/marvel/_quick_browse.html.twig',
+         *          'columns' => ['name', 'images', 'urls'],
+         *      ],
+         *  ]
+         *
+         * @var array<string, array<string,mixed>|string>
+         */
+        public readonly array $views = [],
+
+        /** Default view code. Defaults to the first configured view, then "table". */
+        public readonly ?string $defaultView = null,
     ) {}
 }

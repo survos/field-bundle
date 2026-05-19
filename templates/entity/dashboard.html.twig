@@ -116,7 +116,25 @@
                         </h3>
                     </div>
                     <div class="card-body">
-                        <div class="text-muted">TODO: detect mezcalito/ux-search configurations for this class.</div>
+                        {% if uxSearch %}
+                            <div>Search: <code>{{ uxSearch.name }}</code></div>
+                            {% if uxSearch.hitTemplate %}
+                                <div class="text-muted small mt-1">Template: <code>{{ uxSearch.hitTemplate }}</code></div>
+                            {% endif %}
+                            {% if uxSearch.url %}
+                                <div class="mt-3">
+                                    <a href="{{ uxSearch.url }}" class="btn btn-sm btn-outline-primary">
+                                        Search
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% elseif not uxSearchRegistryAvailable %}
+                            <div class="text-muted">
+                                UX Search registry is not available. Install and enable <code>survos/search-bundle</code>.
+                            </div>
+                        {% else %}
+                            <div class="text-muted">No UX Search fields configured for this class.</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

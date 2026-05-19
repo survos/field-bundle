@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Survos\FieldBundle;
 
-use Survos\CoreBundle\Traits\HasConfigurableRoutes;
+use Survos\Kit\SurvosKitBundle;
+use Survos\Kit\Traits\HasConfigurableRoutes;
 use Survos\FieldBundle\Command\MetaExportCommand;
 use Survos\FieldBundle\Compiler\EntityMetaPass;
 use Survos\FieldBundle\Compiler\RouteMetaPass;
@@ -18,10 +19,12 @@ use Survos\FieldBundle\Twig\EntityGlobalsExtension;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Kernel\RequiredBundle;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
+#[RequiredBundle(SurvosKitBundle::class)]
 class SurvosFieldBundle extends AbstractBundle
 {
     use HasConfigurableRoutes;
@@ -78,6 +81,10 @@ class SurvosFieldBundle extends AbstractBundle
             ->setArgument(
                 '$chatWorkspaceResolver',
                 new Reference('Survos\\MeiliBundle\\Service\\ChatWorkspaceResolver', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+            )
+            ->setArgument(
+                '$uxSearchRegistry',
+                new Reference('Survos\\SearchBundle\\Registry\\UxSearchRegistry', ContainerInterface::NULL_ON_INVALID_REFERENCE),
             );
     }
 
