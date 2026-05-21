@@ -14,6 +14,7 @@ use Survos\FieldBundle\Menu\FieldMenuSubscriber;
 use Survos\FieldBundle\Registry\EntityMetaRegistry;
 use Survos\FieldBundle\Registry\RouteMetaRegistry;
 use Survos\FieldBundle\Service\FieldReader;
+use Survos\FieldBundle\Service\JsonFormatter;
 use Survos\FieldBundle\Service\RouteIdentityValueResolver;
 use Survos\FieldBundle\Twig\EntityGlobalsExtension;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -46,6 +47,7 @@ class SurvosFieldBundle extends AbstractBundle
             ->autowire()
             ->autoconfigure()
             ->set(FieldReader::class)->public()
+            ->set(JsonFormatter::class)
             ->set(EntityMetaRegistry::class)->public()->arg('$descriptors', [])
             ->set(RouteMetaRegistry::class)->public()->arg('$descriptors', [])
             ->set(EntityGlobalsExtension::class)
