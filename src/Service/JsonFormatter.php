@@ -8,6 +8,16 @@ use Twig\Attribute\AsTwigFilter;
 
 final class JsonFormatter
 {
+    #[AsTwigFilter('short_class')]
+    public function shortClass(string|object $value): string
+    {
+        try {
+            return (new \ReflectionClass($value))->getShortName();
+        } catch (\Exception) {
+            return is_object($value) ? $value::class : $value;
+        }
+    }
+
     /**
      * Pretty-print JSON or JSON-serializable data for Twig templates.
      *
