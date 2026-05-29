@@ -16,12 +16,12 @@
     },
     "require": {
         "php": "^8.4",
-        "survos/atlas-bundle": "^2.0",
+        "survos/atlas-bundle": "^2.5",
         "symfony/config": "^8.0",
         "symfony/dependency-injection": "^8.0",
         "symfony/http-kernel": "^8.0",
         "symfony/string": "^8.0",
-        "survos/kit-bundle": "^2.0"
+        "survos/kit-bundle": "^2.5"
     },
     "require-dev": {
         "phpunit/phpunit": "^13.0",
