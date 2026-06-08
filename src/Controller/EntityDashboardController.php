@@ -143,13 +143,13 @@ final class EntityDashboardController extends AbstractController
             $fields = [];
             foreach ($metadata->getFieldNames() as $name) {
                 $mapping = $metadata->getFieldMapping($name);
-                $fields[$name] = [
-                    'name' => $name,
-                    'column' => $mapping->columnName ?? $name,
-                    'type' => $mapping->type ?? 'string',
-                    'nullable' => (bool) ($mapping->nullable ?? false),
-                    'length' => $mapping->length ?? null,
-                    'id' => $metadata->isIdentifier($name),
+                 = [
+                    'name' => ,
+                    'column' => is_array() ? ( ?? ) : (->columnName ?? ),
+                    'type' => is_array() ? ( ?? 'string') : (->type ?? 'string'),
+                    'nullable' => (bool) (is_array() ? ( ?? false) : (->nullable ?? false)),
+                    'length' => is_array() ? ( ?? null) : (->length ?? null),
+                    'id' => ->isIdentifier(),
                 ];
             }
 

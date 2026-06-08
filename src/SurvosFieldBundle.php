@@ -87,6 +87,10 @@ class SurvosFieldBundle extends AbstractBundle
             ->setArgument(
                 '$uxSearchRegistry',
                 new Reference('Survos\\SearchBundle\\Registry\\UxSearchRegistry', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+            )
+            ->setArgument(
+                '$workflowHelper',
+                new Reference('Survos\\StateBundle\\Service\\WorkflowHelperService', ContainerInterface::NULL_ON_INVALID_REFERENCE),
             );
     }
 

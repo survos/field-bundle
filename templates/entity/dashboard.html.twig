@@ -1,165 +1,253 @@
-{% extends "@SurvosTabler/layout/base.html.twig" %}
+{% extends '@SurvosTabler/layout/base.html.twig' %}
 
 {% block title %}{{ descriptor.label }}{% endblock %}
 
 {% block page_content %}
     <div class="container-xl py-3">
-
-        <div class="d-flex align-items-center mb-4">
-            {% if descriptor.icon %}
-                {{ descriptor.icon }}
-                {{ ux_icon(descriptor.icon) }}
-{#                <span class="me-3 fs-1">{{ ux_icon(descriptor.icon) }}</span>#}
-            {% endif %}
-            <div>
-                <h1 class="mb-0">{{ descriptor.label }}</h1>
-                <div class="text-muted small">
-                    {{ descriptor.group }}
-                    <span class="mx-1">·</span>
-                    <code>{{ descriptor.code }}</code>
-                    <span class="mx-1">·</span>
-                    <code>{{ descriptor.class }}</code>
+        <div class="page-header d-print-none mb-3">
+            <div class="row g-2 align-items-center">
+                <div class="col">
+                    <div class="page-pretitle">{{ descriptor.group }}</div>
+                    <h1 class="page-title d-flex align-items-center gap-2">
+                        {% if descriptor.icon %}{{ ux_icon(descriptor.icon, {height: '30px', width: '30px'}) }}{% endif %}
+                        {{ descriptor.label }}
+                    </h1>
+                    <div class="text-muted small mt-1">
+                        <code>{{ descriptor.code }}</code>
+                        <span class="mx-1">/</span>
+                        <code>{{ descriptor.class }}</code>
+                    </div>
+                    {% if descriptor.description %}
+                        <p class="text-muted mt-2 mb-0">{{ descriptor.description }}</p>
+                    {% endif %}
                 </div>
-                {% if descriptor.description %}
-                    <p class="mt-2 mb-0">{{ descriptor.description }}</p>
-                {% endif %}
+                <div class="col-auto ms-auto d-print-none">
+                    <div class="btn-list">
+                        {% if browseUrl %}
+                            <a href="{{ browseUrl }}" class="btn btn-outline-primary">
+                                {{ ux_icon('tabler:table', {height: '18px', width: '18px'}) }} Browse
+                            </a>
+                        {% endif %}
+                        {% if constantsUrl %}
+                            <a href="{{ constantsUrl }}" class="btn btn-outline-secondary">
+                                {{ ux_icon('tabler:braces', {height: '18px', width: '18px'}) }} Constants
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="row g-3">
-
-            {# Doctrine #}
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0">
-                            {{ ux_icon('database') }}
-                            Database
-                        </h3>
-
-                    </div>
+        <div class="row row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
                     <div class="card-body">
-                        {% if rowCount is not null %}
-                            <div class="display-5 fw-bold">{{ rowCount|number_format }}</div>
-                            <div class="text-muted">rows</div>
-                        {% else %}
-                            <div class="text-muted">No Doctrine entity manager configured for this class.</div>
-                        {% endif %}
-
-                        {% if browseUrl %}
-                            <div class="mt-4">
-                                <a href="{{ browseUrl }}" class="btn btn-primary">
-                                    Browse {{ descriptor.label }} via ApiGrid
-                                </a>
-                            </div>
-                        {% endif %}
-
-                    </div>
-                </div>
-            </div>
-
-            {# Meilisearch #}
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0">
-                            {{ ux_icon('meili') }}
-                            Meilisearch
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        {% if descriptor.hasMeiliIndex %}
-                            {% if meili %}
-                                <div>Index: <code>{{ meili.baseName }}</code></div>
-                                {% if meili.searchUrl or meili.chatUrls is not empty %}
-                                    <div class="mt-3 d-flex flex-wrap gap-2">
-                                        {% if meili.searchUrl %}
-                                            <a href="{{ meili.searchUrl }}" class="btn btn-sm btn-outline-primary">
-                                                Search
-                                            </a>
-                                        {% endif %}
-                                        {% for chat in meili.chatUrls %}
-                                            <a href="{{ chat.url }}" class="btn btn-sm btn-outline-secondary">
-                                                Chat{% if meili.chatUrls|length > 1 %}: {{ chat.workspace }}{% endif %}
-                                            </a>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            {% elseif not meiliRegistryAvailable %}
-                                <div class="text-muted">
-                                    Has <code>#[MeiliIndex]</code>, but the MeiliRegistry service is not available.
-                                    Install and enable <code>survos/meili-bundle</code>, then clear the container cache.
-                                </div>
-                            {% else %}
-                                <div class="text-muted">
-                                    Has <code>#[MeiliIndex]</code>, but this class is not in the compiled MeiliRegistry.
-                                    Run <code>bin/console cache:pool:clear --all</code> so the Meili compiler pass can rebuild,
-                                    then inspect it with <code>bin/console meili:registry:report</code>.
-                                    If the database registry is empty or stale, load it with <code>bin/console meili:registry:sync</code>.
-                                </div>
-                            {% endif %}
-                            {% if path('meili_admin') is defined %}{# best-effort link, see registry route #}{% endif %}
-                        {% else %}
-                            <div class="text-muted">No #[MeiliIndex] attribute on this class.</div>
+                        <div class="subheader">Rows</div>
+                        <div class="h1 mb-0">{{ rowCount is not null ? rowCount|number_format : 'n/a' }}</div>
+                        {% if doctrine.table|default(null) %}
+                            <div class="text-muted small mt-1"><code>{{ doctrine.table }}</code></div>
                         {% endif %}
                     </div>
                 </div>
             </div>
-
-            {# ux-search #}
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0">
-                            {{ ux_icon('search') }}
-                            ux-search
-                        </h3>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="subheader">Fields</div>
+                        <div class="h1 mb-0">{{ fields|length }}</div>
+                        <div class="text-muted small mt-1">{{ doctrine.fields|default([])|length }} Doctrine columns</div>
                     </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="subheader">Search</div>
+                        <div class="h1 mb-0">{{ (uxSearch ? 1 : 0) + (meili ? 1 : 0) }}</div>
+                        <div class="text-muted small mt-1">registered backends</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="subheader">Workflows</div>
+                        <div class="h1 mb-0">{{ workflows|length }}</div>
+                        <div class="text-muted small mt-1">state machines</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row row-cards mb-3">
+            <div class="col-12 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">Doctrine</h3></div>
+                    <div class="card-body">
+                        {% if doctrine %}
+                            <dl class="row mb-0">
+                                <dt class="col-4">Table</dt><dd class="col-8"><code>{{ doctrine.table }}</code></dd>
+                                <dt class="col-4">Identifier</dt><dd class="col-8"><code>{{ doctrine.identifier|join(', ') }}</code></dd>
+                                <dt class="col-4">Columns</dt><dd class="col-8">{{ doctrine.fields|length }}</dd>
+                            </dl>
+                        {% else %}
+                            <div class="text-muted">No Doctrine metadata is available for this class.</div>
+                        {% endif %}
+                    </div>
+                    {% if browseUrl %}
+                        <div class="card-footer">
+                            <a href="{{ browseUrl }}" class="btn btn-sm btn-outline-primary">Browse records</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">Doctrine UX Search</h3></div>
                     <div class="card-body">
                         {% if uxSearch %}
                             <div>Search: <code>{{ uxSearch.name }}</code></div>
                             {% if uxSearch.hitTemplate %}
                                 <div class="text-muted small mt-1">Template: <code>{{ uxSearch.hitTemplate }}</code></div>
                             {% endif %}
-                            {% if uxSearch.url %}
-                                <div class="mt-3">
-                                    <a href="{{ uxSearch.url }}" class="btn btn-sm btn-outline-primary">
-                                        Search
-                                    </a>
-                                </div>
-                            {% endif %}
                         {% elseif not uxSearchRegistryAvailable %}
-                            <div class="text-muted">
-                                UX Search registry is not available. Install and enable <code>survos/search-bundle</code>.
-                            </div>
+                            <div class="text-muted">UX Search registry is not available.</div>
                         {% else %}
-                            <div class="text-muted">No UX Search fields configured for this class.</div>
+                            <div class="text-muted">No UX Search registration for this entity.</div>
                         {% endif %}
                     </div>
+                    {% if uxSearch.url|default(null) %}
+                        <div class="card-footer">
+                            <a href="{{ uxSearch.url }}" class="btn btn-sm btn-outline-primary">Open Doctrine search</a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
-            {# API Platform #}
-            <div class="col-12 col-md-6 col-xl-4">
+            <div class="col-12 col-lg-4">
                 <div class="card h-100">
-                    <div class="card-header">
-                        <h3 class="card-title mb-0">
-                            {{ ux_icon('api') }}
-                            API Platform
-                        </h3>
-                    </div>
+                    <div class="card-header"><h3 class="card-title">Meilisearch</h3></div>
                     <div class="card-body">
-                        {% if descriptor.hasApiResource %}
-                            <div class="text-success">#[ApiResource] declared.</div>
+                        {% if meili %}
+                            <dl class="row mb-0">
+                                <dt class="col-4">Base</dt><dd class="col-8"><code>{{ meili.baseName }}</code></dd>
+                                <dt class="col-4">UID</dt><dd class="col-8"><code>{{ meili.uid }}</code></dd>
+                                <dt class="col-4">Primary key</dt><dd class="col-8"><code>{{ meili.primaryKey|default('') ?: 'n/a' }}</code></dd>
+                                <dt class="col-4">Facets</dt><dd class="col-8">{{ meili.facets|length }}</dd>
+                            </dl>
+                        {% elseif descriptor.hasMeiliIndex and not meiliRegistryAvailable %}
+                            <div class="text-muted">This entity has <code>#[MeiliIndex]</code>, but the Meili registry service is unavailable.</div>
+                        {% elseif descriptor.hasMeiliIndex %}
+                            <div class="text-muted">This entity has <code>#[MeiliIndex]</code>, but it is not in the compiled Meili registry.</div>
                         {% else %}
-                            <div class="text-muted">No #[ApiResource] attribute.</div>
+                            <div class="text-muted">No <code>#[MeiliIndex]</code> attribute on this entity.</div>
                         {% endif %}
                     </div>
+                    {% if meili %}
+                        <div class="card-footer d-flex flex-wrap gap-2">
+                            {% if meili.searchUrl %}<a href="{{ meili.searchUrl }}" class="btn btn-sm btn-outline-primary">Open Meili search</a>{% endif %}
+                            {% if meili.dashboardUrl %}<a href="{{ meili.dashboardUrl }}" class="btn btn-sm btn-outline-secondary">Diagnostics</a>{% endif %}
+                            {% if meili.registryUrl %}<a href="{{ meili.registryUrl }}" class="btn btn-sm btn-outline-secondary">Registry</a>{% endif %}
+                            {% for chat in meili.chatUrls %}<a href="{{ chat.url }}" class="btn btn-sm btn-outline-secondary">Chat: {{ chat.workspace }}</a>{% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-
         </div>
 
+        <div class="row row-cards mb-3">
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">Workflows</h3></div>
+                    <div class="card-body">
+                        {% if workflows %}
+                            <div class="list-group list-group-flush">
+                                {% for workflow in workflows %}
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <code>{{ workflow.name }}</code>
+                                        {% if workflow.url %}<a href="{{ workflow.url }}" class="btn btn-sm btn-outline-secondary">Open</a>{% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% elseif not workflowRegistryAvailable %}
+                            <div class="text-muted">Workflow registry is not available.</div>
+                        {% else %}
+                            <div class="text-muted">No workflows support this entity.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
 
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">Public Constants</h3></div>
+                    <div class="card-body">
+                        {% if constants %}
+                            <div class="list-group list-group-flush">
+                                {% for constant in constants %}
+                                    <div class="list-group-item px-0 d-flex justify-content-between gap-3">
+                                        <code>{{ constant.name }}</code>
+                                        <span class="text-muted small">{{ constant.count is not null ? constant.count ~ ' values' : constant.type }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted">No public constants.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Property Inventory</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-sm">
+                    <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Type</th>
+                        <th>Doctrine</th>
+                        <th>Capabilities</th>
+                        <th>Description</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for field in fields %}
+                        {% set column = doctrine.fields[field.name]|default(null) %}
+                        <tr>
+                            <td><code>{{ field.name }}</code></td>
+                            <td><code>{{ field.type }}</code></td>
+                            <td>
+                                {% if column %}
+                                    <code>{{ column.column }}</code>
+                                    <span class="text-muted small">{{ column.type }}{% if column.length %}({{ column.length }}){% endif %}</span>
+                                    {% if column.id %}<span class="badge bg-blue-lt ms-1">id</span>{% endif %}
+                                    {% if not column.nullable %}<span class="badge bg-secondary-lt ms-1">required</span>{% endif %}
+                                {% else %}
+                                    <span class="text-muted">n/a</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if field.searchable %}<span class="badge bg-blue-lt">searchable</span>{% endif %}
+                                    {% if field.filterable %}<span class="badge bg-green-lt">filterable</span>{% endif %}
+                                    {% if field.sortable %}<span class="badge bg-purple-lt">sortable</span>{% endif %}
+                                    {% if field.facet %}<span class="badge bg-cyan-lt">facet</span>{% endif %}
+                                    {% if field.visible %}<span class="badge bg-secondary-lt">visible</span>{% endif %}
+                                </div>
+                            </td>
+                            <td class="text-muted small">{{ field.description|default('') }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-muted">No field metadata discovered.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 {% endblock %}
