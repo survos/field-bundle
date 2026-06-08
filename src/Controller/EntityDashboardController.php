@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Survos\FieldBundle\Controller;
 
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
 use Survos\FieldBundle\Registry\EntityMetaRegistry;
+use Survos\FieldBundle\Service\FieldReader;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -14,29 +16,20 @@ use Symfony\Component\Routing\RouterInterface;
 /**
  * Per-entity admin dashboard.
  *
- * Single page that summarises everything the admin cares about for one
- * #[EntityMeta]-registered class:
- *   - Doctrine row count (when an EM is configured for it)
- *   - Meilisearch index info (when meili-bundle is installed and the class
- *     has #[MeiliIndex])
- *   - ux-search availability (when survos/search-bundle is installed)
- *   - Browse link (when api-grid-bundle is installed)
- *
  * The `$code` route param is the snake-cased identity computed at compile
- * time on EntityMetaDescriptor (e.g. "app_song", "pixie_foo").
+ * time on EntityMetaDescriptor, e.g. "app_bill".
  */
 final class EntityDashboardController extends AbstractController
 {
     public function __construct(
         private readonly EntityMetaRegistry $registry,
-        private readonly ?RouterInterface   $router = null,
-        private readonly ?ManagerRegistry   $doctrine = null,
-        // MeiliRegistry lives in survos/meili-bundle; injected via service id by
-        // the bundle's service definition with NULL_ON_INVALID_REFERENCE so that
-        // field-bundle stays usable without meili-bundle.
-        private readonly ?object            $meiliRegistry = null,
-        private readonly ?object            $chatWorkspaceResolver = null,
-        private readonly ?object            $uxSearchRegistry = null,
+        private readonly FieldReader $fieldReader,
+        private readonly ?RouterInterface $router = null,
+        private readonly ?ManagerRegistry $doctrine = null,
+        private readonly ?object $meiliRegistry = null,
+        private readonly ?object $chatWorkspaceResolver = null,
+        private readonly ?object $uxSearchRegistry = null,
+        private readonly ?object $workflowHelper = null,
     ) {}
 
     #[Route('/entity/{code}', name: 'survos_entity_dashboard', methods: ['GET'])]
@@ -47,14 +40,22 @@ final class EntityDashboardController extends AbstractController
             throw $this->createNotFoundException(sprintf('No #[EntityMeta] entity registered for code "%s".', $code));
         }
 
+        $class = $descriptor->class;
+
         return $this->render('@SurvosField/entity/dashboard.html.twig', [
-            'descriptor'             => $descriptor,
-            'rowCount'               => $this->resolveRowCount($descriptor->class),
-            'meili'                  => $this->resolveMeili($descriptor->class),
+            'descriptor' => $descriptor,
+            'rowCount' => $this->resolveRowCount($class),
+            'doctrine' => $this->resolveDoctrine($class),
+            'fields' => $this->fieldReader->getDescriptors($class),
+            'constants' => $this->resolveConstants($class),
+            'meili' => $this->resolveMeili($class),
             'meiliRegistryAvailable' => $this->meiliRegistry !== null,
-            'uxSearch'               => $this->resolveUxSearch($descriptor->class, $descriptor->code),
+            'uxSearch' => $this->resolveUxSearch($class, $descriptor->code),
             'uxSearchRegistryAvailable' => $this->uxSearchRegistry !== null,
-            'browseUrl'              => $this->resolveBrowseUrl($code),
+            'workflows' => $this->resolveWorkflows($class),
+            'workflowRegistryAvailable' => $this->workflowHelper !== null,
+            'browseUrl' => $this->resolveBrowseUrl($code),
+            'constantsUrl' => $this->routeUrl('survos_entity_constants', []),
         ]);
     }
 
@@ -130,25 +131,58 @@ final class EntityDashboardController extends AbstractController
         }
     }
 
-    /**
-     * @return array{baseName: string, indexUid?: string}|null
-     */
+    private function resolveDoctrine(string $class): ?array
+    {
+        if (!$this->doctrine || !$em = $this->doctrine->getManagerForClass($class)) {
+            return null;
+        }
+
+        try {
+            /** @var ClassMetadata $metadata */
+            $metadata = $em->getClassMetadata($class);
+            $fields = [];
+            foreach ($metadata->getFieldNames() as $name) {
+                $mapping = $metadata->getFieldMapping($name);
+                $fields[$name] = [
+                    'name' => $name,
+                    'column' => $mapping->columnName ?? $name,
+                    'type' => $mapping->type ?? 'string',
+                    'nullable' => (bool) ($mapping->nullable ?? false),
+                    'length' => $mapping->length ?? null,
+                    'id' => $metadata->isIdentifier($name),
+                ];
+            }
+
+            return [
+                'table' => $metadata->getTableName(),
+                'identifier' => $metadata->getIdentifierFieldNames(),
+                'fields' => $fields,
+            ];
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function resolveConstants(string $class): array
+    {
+        $constants = [];
+        foreach ((new \ReflectionClass($class))->getReflectionConstants(\ReflectionClassConstant::IS_PUBLIC) as $constant) {
+            $value = $constant->getValue();
+            $constants[] = [
+                'name' => $constant->getName(),
+                'type' => get_debug_type($value),
+                'count' => is_countable($value) ? count($value) : null,
+                'value' => $value,
+            ];
+        }
+
+        return $constants;
+    }
+
     private function resolveMeili(string $class): ?array
     {
         if (!$this->meiliRegistry) {
             return null;
-        }
-
-        // MeiliRegistry exposes per-class config via a method on the bundle's
-        // own contract; gate behind method_exists so we degrade gracefully if
-        // the contract evolves.
-        foreach (['baseNameForClass', 'getBaseNameForClass'] as $method) {
-            if (method_exists($this->meiliRegistry, $method)) {
-                $baseName = $this->meiliRegistry->{$method}($class);
-                if ($baseName) {
-                    return $this->meiliView((string) $baseName);
-                }
-            }
         }
 
         if (method_exists($this->meiliRegistry, 'names') && method_exists($this->meiliRegistry, 'classFor')) {
@@ -162,25 +196,30 @@ final class EntityDashboardController extends AbstractController
         return null;
     }
 
-    /**
-     * @return array{
-     *     baseName: string,
-     *     searchUrl: ?string,
-     *     chatUrls: list<array{workspace: string, url: string}>
-     * }
-     */
     private function meiliView(string $baseName): array
     {
+        $settings = method_exists($this->meiliRegistry, 'settingsFor')
+            ? ($this->meiliRegistry->settingsFor($baseName) ?? [])
+            : [];
+        $uid = method_exists($this->meiliRegistry, 'uidFor')
+            ? (string) $this->meiliRegistry->uidFor($baseName)
+            : $baseName;
+
         return [
             'baseName' => $baseName,
+            'uid' => $uid,
+            'primaryKey' => (string) ($settings['primaryKey'] ?? ''),
+            'facets' => (array) ($settings['facets'] ?? []),
+            'filterable' => (array) ($settings['filterableAttributes'] ?? $settings['filterable'] ?? []),
+            'sortable' => (array) ($settings['sortableAttributes'] ?? $settings['sortable'] ?? []),
+            'searchable' => (array) ($settings['searchableAttributes'] ?? $settings['searchable'] ?? []),
             'searchUrl' => $this->routeUrl('meili_insta', ['indexName' => $baseName]),
+            'dashboardUrl' => $this->routeUrl('meili_admin_meili_index_dashboard', ['indexName' => $baseName]),
+            'registryUrl' => $this->routeUrl('meili_registry', []),
             'chatUrls' => $this->chatUrls($baseName),
         ];
     }
 
-    /**
-     * @return list<array{workspace: string, url: string}>
-     */
     private function chatUrls(string $baseName): array
     {
         if (!$this->chatWorkspaceResolver || !method_exists($this->chatWorkspaceResolver, 'workspaceTemplatesForIndex')) {
@@ -202,41 +241,6 @@ final class EntityDashboardController extends AbstractController
         return $urls;
     }
 
-    /**
-     * @param array<string, string> $parameters
-     */
-    private function routeUrl(string $route, array $parameters): ?string
-    {
-        if (!$this->router) {
-            return null;
-        }
-        if (!$this->router->getRouteCollection()->get($route)) {
-            return null;
-        }
-
-        try {
-            return $this->router->generate($route, $parameters);
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    private function resolveBrowseUrl(string $code): ?string
-    {
-        if (!$this->router) {
-            return null;
-        }
-        $route = $this->router->getRouteCollection()->get('survos_admin_browse');
-        if (!$route) {
-            return null;
-        }
-
-        return $this->router->generate('survos_admin_browse', ['code' => $code]);
-    }
-
-    /**
-     * @return array{name: string, url: ?string, hitTemplate: ?string}|null
-     */
     private function resolveUxSearch(string $class, string $code): ?array
     {
         if (!$this->uxSearchRegistry || !method_exists($this->uxSearchRegistry, 'forClass')) {
@@ -255,7 +259,44 @@ final class EntityDashboardController extends AbstractController
         ];
     }
 
-    /** @param class-string $class */
+    private function resolveWorkflows(string $class): array
+    {
+        if (!$this->workflowHelper || !method_exists($this->workflowHelper, 'getWorkflowsGroupedByClass')) {
+            return [];
+        }
+
+        $grouped = $this->workflowHelper->getWorkflowsGroupedByClass();
+        $names = $grouped[$class] ?? [];
+        foreach ($grouped as $supportedClass => $workflowNames) {
+            if ($supportedClass !== $class && is_a($class, (string) $supportedClass, true)) {
+                $names = array_merge($names, (array) $workflowNames);
+            }
+        }
+
+        return array_map(fn (string $name): array => [
+            'name' => $name,
+            'url' => $this->routeUrl('survos_workflow', ['flowCode' => $name]),
+        ], array_values(array_unique($names)));
+    }
+
+    private function resolveBrowseUrl(string $code): ?string
+    {
+        return $this->routeUrl('survos_admin_browse', ['code' => $code]);
+    }
+
+    private function routeUrl(string $route, array $parameters): ?string
+    {
+        if (!$this->router || !$this->router->getRouteCollection()->get($route)) {
+            return null;
+        }
+
+        try {
+            return $this->router->generate($route, $parameters);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function shortGlobalKey(string $class): string
     {
         $shortName = (new \ReflectionClass($class))->getShortName();
