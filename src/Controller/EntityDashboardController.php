@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Survos\FieldBundle\Controller;
 
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
 use Survos\FieldBundle\Registry\EntityMetaRegistry;
 use Survos\FieldBundle\Service\FieldReader;
@@ -13,12 +12,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\RouterInterface;
 
-/**
- * Per-entity admin dashboard.
- *
- * The `$code` route param is the snake-cased identity computed at compile
- * time on EntityMetaDescriptor, e.g. "app_bill".
- */
 final class EntityDashboardController extends AbstractController
 {
     public function __construct(
@@ -120,10 +113,12 @@ final class EntityDashboardController extends AbstractController
         if (!$this->doctrine) {
             return null;
         }
+
         $em = $this->doctrine->getManagerForClass($class);
         if (!$em) {
             return null;
         }
+
         try {
             return (int) $em->getRepository($class)->count([]);
         } catch (\Throwable) {
@@ -138,18 +133,17 @@ final class EntityDashboardController extends AbstractController
         }
 
         try {
-            /** @var ClassMetadata $metadata */
             $metadata = $em->getClassMetadata($class);
             $fields = [];
             foreach ($metadata->getFieldNames() as $name) {
                 $mapping = $metadata->getFieldMapping($name);
-                 = [
-                    'name' => ,
-                    'column' => is_array() ? ( ?? ) : (->columnName ?? ),
-                    'type' => is_array() ? ( ?? 'string') : (->type ?? 'string'),
-                    'nullable' => (bool) (is_array() ? ( ?? false) : (->nullable ?? false)),
-                    'length' => is_array() ? ( ?? null) : (->length ?? null),
-                    'id' => ->isIdentifier(),
+                $fields[$name] = [
+                    'name' => $name,
+                    'column' => $this->mappingValue($mapping, 'columnName', $name),
+                    'type' => $this->mappingValue($mapping, 'type', 'string'),
+                    'nullable' => (bool) $this->mappingValue($mapping, 'nullable', false),
+                    'length' => $this->mappingValue($mapping, 'length', null),
+                    'id' => $metadata->isIdentifier($name),
                 ];
             }
 
@@ -161,6 +155,15 @@ final class EntityDashboardController extends AbstractController
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function mappingValue(mixed $mapping, string $key, mixed $default): mixed
+    {
+        if (is_array($mapping)) {
+            return $mapping[$key] ?? $default;
+        }
+
+        return $mapping->{$key} ?? $default;
     }
 
     private function resolveConstants(string $class): array
