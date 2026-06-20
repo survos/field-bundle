@@ -14,8 +14,10 @@ namespace Survos\FieldBundle\Attribute;
 class Map
 {
     /**
-     * @param string|null $source Explicit source key in the record array.
-     *                            Falls back to the property name when null.
+     * @param string|list<string>|null $source One or more source keys to read from the record, in
+     *                            priority order — the first key present with a non-null value wins
+     *                            (the canonical "alias list", e.g. ['title', 'dcterms:title', 'titulo']).
+     *                            Falls back to the property name when none match.
      * @param string|null $regex Regex applied to record keys; first match wins.
      * @param string|null $if Conditional: 'isset' = skip if resolved value is null.
      * @param string|null $delim Delimiter for splitting a string into an array property.
@@ -28,7 +30,7 @@ class Map
      * @param bool $translatable Mark field for translation pipelines.
      */
     public function __construct(
-        public readonly ?string $source = null,
+        public readonly string|array|null $source = null,
         public readonly ?string $regex = null,
         public readonly ?string $if = null,
         public readonly ?string $delim = null,
@@ -40,5 +42,20 @@ class Map
         public readonly bool $searchable = false,
         public readonly bool $translatable = false,
     ) {
+    }
+
+    /**
+     * The source keys to try, in priority order. A bare string becomes a one-element list, so
+     * callers can always iterate uniformly.
+     *
+     * @return list<string>
+     */
+    public function sources(): array
+    {
+        if ($this->source === null) {
+            return [];
+        }
+
+        return is_array($this->source) ? array_values($this->source) : [$this->source];
     }
 }
