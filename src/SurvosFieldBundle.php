@@ -11,11 +11,13 @@ use Survos\FieldBundle\Command\RouteSitemapCommand;
 use Survos\FieldBundle\Compiler\EntityMetaPass;
 use Survos\FieldBundle\Compiler\RouteMetaPass;
 use Survos\FieldBundle\Controller\EntityDashboardController;
+use Survos\FieldBundle\Controller\FieldReportController;
 use Survos\FieldBundle\Menu\FieldMenuSubscriber;
 use Survos\FieldBundle\Registry\EntityMetaRegistry;
 use Survos\FieldBundle\Registry\RouteMetaRegistry;
 use Survos\FieldBundle\Service\FieldReader;
 use Survos\FieldBundle\Service\JsonFormatter;
+use Survos\FieldBundle\Service\RouteSitemapBuilder;
 use Survos\FieldBundle\Service\RouteIdentityValueResolver;
 use Survos\FieldBundle\Twig\EntityGlobalsExtension;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -58,7 +60,9 @@ class SurvosFieldBundle extends AbstractBundle
             ->set(RouteMetaRegistry::class)->public()->arg('$descriptors', [])
             ->set(EntityGlobalsExtension::class)
             ->set(MetaExportCommand::class)
+            ->set(RouteSitemapBuilder::class)
             ->set(RouteSitemapCommand::class)
+            ->set(FieldReportController::class)->public()->tag('controller.service_arguments')
             // ValueResolverInterface — autoconfigure tags it as
             // controller.argument_value_resolver. Closes the URL→entity
             // loop for any entity carrying #[RouteIdentity], removing the

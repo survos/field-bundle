@@ -1,0 +1,31 @@
+{% extends "@SurvosTabler/layout/base.html.twig" %}
+
+{% block title %}Route Sitemap{% endblock %}
+
+{% block page_content %}
+    <div class="container-xl py-3">
+        <div class="page-header d-print-none mb-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="page-title">Route Sitemap</h1>
+                    <div class="text-muted mt-1">
+                        Every route carrying <code>#[RouteMeta]</code> — description, audience,
+                        grouped by entity — plus a coverage-gap list. Read raw at
+                        <a href="{{ rawUrl }}">{{ rawUrl }}</a> (plain text, agent/copy-paste friendly).
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-{{ coverage.percent >= 80 ? 'green' : (coverage.percent >= 30 ? 'yellow' : 'red') }}-lt fs-3">
+                        {{ coverage.covered }} / {{ coverage.total }} ({{ coverage.percent }}%)
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <pre class="mb-0" style="white-space: pre-wrap;">{{ markdown }}</pre>
+            </div>
+        </div>
+    </div>
+{% endblock %}

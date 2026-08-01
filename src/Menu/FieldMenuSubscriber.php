@@ -30,5 +30,6 @@ final class FieldMenuSubscriber extends AbstractAdminMenuSubscriber
     {
         $submenu = $this->addSubmenu($event->getMenu(), $this->getLabel(), $this->getGroupIcon());
         $this->add($submenu, 'survos_entity_constants', [], 'Entity Constants', icon: 'code');
+        $this->add($submenu, 'survos_routes_sitemap', [], 'Route Sitemap', icon: 'map');
     }
 }
