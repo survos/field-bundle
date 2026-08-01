@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Survos\FieldBundle\Service;
 
-use Survos\FieldBundle\Model\RouteMetaDescriptor;
 use Survos\FieldBundle\Registry\RouteMetaRegistry;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Builds the markdown route outline -- shared by RouteSitemapCommand (CLI)
- * and FieldReportController's web page (Fields nav > Route Sitemap), so
- * there's exactly one place that knows how to render this.
+ * Builds the route outline (markdown for CLI/agent consumption, structured
+ * array for the JSON endpoint and the HTML report) -- shared by
+ * RouteSitemapCommand and FieldReportController, so there's exactly one
+ * place that knows how to assemble this.
  *
  * Grouped by controller class (not by entity) -- an agent or dev exploring
  * an unfamiliar app thinks "what does AccController do", not "what routes
@@ -28,53 +28,89 @@ final class RouteSitemapBuilder
     ) {
     }
 
-    public function render(bool $includeGaps = true): string
+    /**
+     * @return array{
+     *     coverage: array{covered: int, total: int, percent: int},
+     *     controllers: list<array{
+     *         class: string, shortName: string, prefix: ?string,
+     *         routes: list<array{
+     *             name: string, path: string, hasMeta: bool,
+     *             methods: list<string>, description: ?string, audience: ?string,
+     *             purpose: ?string, label: ?string, entity: ?string, tags: list<string>,
+     *         }>,
+     *     }>,
+     * }
+     */
+    public function toArray(bool $includeGaps = true): array
     {
         $byName = [];
         foreach ($this->routeRegistry->all() as $d) {
             $byName[$d->name] = $d;
         }
 
-        // Group every route (covered or not) by controller class, using
-        // $allRoutes as the authoritative full list and $byName to enrich
-        // covered ones with their #[RouteMeta] payload.
         $byController = [];
         foreach ($this->allRoutes as $r) {
             if (!$includeGaps && !$r['hasMeta']) {
                 continue;
             }
+
+            $meta = $byName[$r['name']] ?? null;
             $byController[$r['controllerClass']][] = [
-                'name'     => $r['name'],
-                'path'     => $r['path'],
-                'meta'     => $byName[$r['name']] ?? null,
+                'name'        => $r['name'],
+                'path'        => $r['path'],
+                'hasMeta'     => $r['hasMeta'],
+                'methods'     => $meta?->methods ?? [],
+                'description' => $meta?->description,
+                'audience'    => $meta?->audience->value,
+                'purpose'     => $meta?->purpose->value,
+                'label'       => $meta?->label,
+                'entity'      => $meta?->entity,
+                'tags'        => $meta?->tags ?? [],
             ];
         }
         ksort($byController);
+
+        $controllers = [];
+        foreach ($byController as $controllerClass => $routes) {
+            usort($routes, static fn(array $a, array $b) => $a['name'] <=> $b['name']);
+            $controllers[] = [
+                'class'     => $controllerClass,
+                'shortName' => substr((string) strrchr($controllerClass, '\\'), 1) ?: $controllerClass,
+                'prefix'    => $this->controllerPrefixes[$controllerClass] ?? null,
+                'routes'    => $routes,
+            ];
+        }
+
+        return [
+            'coverage'    => $this->coverage(),
+            'controllers' => $controllers,
+        ];
+    }
+
+    public function render(bool $includeGaps = true): string
+    {
+        $data = $this->toArray($includeGaps);
 
         $lines = [];
         $lines[] = '# Route Sitemap';
         $lines[] = '';
         $lines[] = sprintf(
             '%d of %d routes carry `#[RouteMeta]` (%d%%), across %d controller(s).',
-            \count($this->routeRegistry->all()),
-            \count($this->allRoutes),
-            $this->coverage()['percent'],
-            \count($byController),
+            $data['coverage']['covered'],
+            $data['coverage']['total'],
+            $data['coverage']['percent'],
+            \count($data['controllers']),
         );
         $lines[] = '';
 
-        foreach ($byController as $controllerClass => $routes) {
-            $short = substr((string) strrchr($controllerClass, '\\'), 1) ?: $controllerClass;
-            $prefix = $this->controllerPrefixes[$controllerClass] ?? null;
-            $heading = $prefix !== null ? "{$short} (`{$prefix}`)" : $short;
-
+        foreach ($data['controllers'] as $c) {
+            $heading = $c['prefix'] !== null ? "{$c['shortName']} (`{$c['prefix']}`)" : $c['shortName'];
             $lines[] = "## {$heading}";
             $lines[] = '';
 
-            usort($routes, static fn(array $a, array $b) => $a['name'] <=> $b['name']);
-            foreach ($routes as $r) {
-                $lines[] = $r['meta'] !== null
-                    ? self::renderRoute($r['meta'])
+            foreach ($c['routes'] as $r) {
+                $lines[] = $r['hasMeta']
+                    ? self::renderRouteLine($r)
                     : sprintf('- ⚠ **%s** `%s` — _missing `#[RouteMeta]`_', $r['name'], $r['path']);
             }
             $lines[] = '';
@@ -96,18 +132,19 @@ final class RouteSitemapBuilder
         ];
     }
 
-    private static function renderRoute(RouteMetaDescriptor $d): string
+    /** @param array<string, mixed> $r */
+    private static function renderRouteLine(array $r): string
     {
-        $audience = strtoupper($d->audience->value);
-        $methods  = implode('|', $d->methods) ?: 'GET';
+        $audience = strtoupper((string) $r['audience']);
+        $methods  = implode('|', $r['methods']) ?: 'GET';
 
         return sprintf(
             "- **%s** `%s %s` [%s] — %s",
-            $d->label ?? $d->name,
+            $r['label'] ?? $r['name'],
             $methods,
-            $d->path,
+            $r['path'],
             $audience,
-            $d->description,
+            $r['description'],
         );
     }
 }

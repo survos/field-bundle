@@ -6,14 +6,17 @@ namespace Survos\FieldBundle\Controller;
 
 use Survos\FieldBundle\Service\RouteSitemapBuilder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Web-viewable home for field-bundle's agent/dev-facing reports -- the
- * "Fields" nav menu, next to Entity Constants. Plaintext-in-a-<pre> on
- * purpose (no markdown-to-HTML dependency): this is meant to be read raw
- * by a human OR pasted straight into an agent's context, not styled prose.
+ * "Fields" nav menu, next to Entity Constants.
+ *
+ * Three formats of the same data: HTML (readable, for a human), .json
+ * (structured, for a script/agent that wants to filter/query it), .txt
+ * (markdown, for pasting straight into an agent's context or copy-paste).
  */
 final class FieldReportController extends AbstractController
 {
@@ -25,10 +28,13 @@ final class FieldReportController extends AbstractController
     #[Route('/routes-sitemap', name: 'survos_routes_sitemap', methods: ['GET'])]
     public function routeSitemap(): Response
     {
+        $data = $this->routeSitemap->toArray();
+
         return $this->render('@SurvosField/report/route_sitemap.html.twig', [
-            'markdown' => $this->routeSitemap->render(),
-            'coverage' => $this->routeSitemap->coverage(),
-            'rawUrl'   => $this->generateUrl('survos_routes_sitemap_raw'),
+            'coverage'    => $data['coverage'],
+            'controllers' => $data['controllers'],
+            'rawUrl'      => $this->generateUrl('survos_routes_sitemap_raw'),
+            'jsonUrl'     => $this->generateUrl('survos_routes_sitemap_json'),
         ]);
     }
 
@@ -36,5 +42,11 @@ final class FieldReportController extends AbstractController
     public function routeSitemapRaw(): Response
     {
         return new Response($this->routeSitemap->render(), 200, ['Content-Type' => 'text/plain; charset=utf-8']);
+    }
+
+    #[Route('/routes-sitemap.json', name: 'survos_routes_sitemap_json', methods: ['GET'])]
+    public function routeSitemapJson(): JsonResponse
+    {
+        return new JsonResponse($this->routeSitemap->toArray());
     }
 }

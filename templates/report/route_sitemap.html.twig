@@ -9,23 +9,95 @@
                 <div class="col">
                     <h1 class="page-title">Route Sitemap</h1>
                     <div class="text-muted mt-1">
-                        Every route carrying <code>#[RouteMeta]</code> — description, audience,
-                        grouped by entity — plus a coverage-gap list. Read raw at
-                        <a href="{{ rawUrl }}">{{ rawUrl }}</a> (plain text, agent/copy-paste friendly).
+                        Every route, grouped by controller — description, audience, and coverage
+                        of <code>#[RouteMeta]</code>.
+                        <a href="{{ rawUrl }}">Raw text</a> ·
+                        <a href="{{ jsonUrl }}">JSON</a>
                     </div>
                 </div>
                 <div class="col-auto">
-                    <span class="badge bg-{{ coverage.percent >= 80 ? 'green' : (coverage.percent >= 30 ? 'yellow' : 'red') }}-lt fs-3">
-                        {{ coverage.covered }} / {{ coverage.total }} ({{ coverage.percent }}%)
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-{{ coverage.percent >= 80 ? 'green' : (coverage.percent >= 30 ? 'yellow' : 'red') }}-lt fs-3">
+                            {{ coverage.covered }} / {{ coverage.total }} ({{ coverage.percent }}%)
+                        </span>
+                    </div>
                 </div>
+            </div>
+            <div class="progress mt-2" style="height: 4px;">
+                <div class="progress-bar bg-{{ coverage.percent >= 80 ? 'green' : (coverage.percent >= 30 ? 'yellow' : 'red') }}"
+                     style="width: {{ coverage.percent }}%"></div>
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-body">
-                <pre class="mb-0" style="white-space: pre-wrap;">{{ markdown }}</pre>
-            </div>
+        <div class="mb-3">
+            <input type="text" class="form-control" id="route-sitemap-filter"
+                   placeholder="Filter by controller, route name, path, or description…" autofocus>
+        </div>
+
+        <div id="route-sitemap-controllers">
+            {% for c in controllers %}
+                {% set missingCount = c.routes|filter(r => not r.hasMeta)|length %}
+                <div class="card mb-3 route-sitemap-controller"
+                     data-search="{{ (c.shortName ~ ' ' ~ c.class ~ ' ' ~ (c.prefix ?? '') ~ ' ' ~ c.routes|map(r => r.name ~ ' ' ~ r.path ~ ' ' ~ (r.description ?? ''))|join(' '))|lower }}">
+                    <div class="card-header d-flex align-items-center">
+                        <h3 class="card-title mb-0">
+                            {{ c.shortName }}
+                            {% if c.prefix %}
+                                <code class="text-muted fw-normal ms-1">{{ c.prefix }}</code>
+                            {% endif %}
+                        </h3>
+                        <div class="card-actions ms-auto">
+                            {% if missingCount > 0 %}
+                                <span class="badge bg-red-lt">{{ missingCount }} missing</span>
+                            {% else %}
+                                <span class="badge bg-green-lt">fully covered</span>
+                            {% endif %}
+                            <span class="badge bg-secondary-lt">{{ c.routes|length }} route{{ c.routes|length == 1 ? '' : 's' }}</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead>
+                            <tr>
+                                <th>Route</th>
+                                <th>Method / Path</th>
+                                <th>Audience</th>
+                                <th>Description</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for r in c.routes %}
+                                <tr class="{{ r.hasMeta ? '' : 'text-muted' }}">
+                                    <td><code>{{ r.name }}</code></td>
+                                    <td><span class="badge bg-blue-lt">{{ r.methods|length ? r.methods|join('|') : 'GET' }}</span> <code>{{ r.path }}</code></td>
+                                    <td>
+                                        {% if r.audience %}
+                                            <span class="badge bg-{{ r.audience == 'public' ? 'green' : (r.audience == 'admin' ? 'red' : 'azure') }}-lt">{{ r.audience }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if r.hasMeta %}
+                                            {{ r.description }}
+                                        {% else %}
+                                            <span class="text-red">⚠ missing <code>#[RouteMeta]</code></span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     </div>
+
+    <script>
+        document.getElementById('route-sitemap-filter').addEventListener('input', function (e) {
+            const q = e.target.value.toLowerCase().trim();
+            document.querySelectorAll('.route-sitemap-controller').forEach(function (card) {
+                card.style.display = (q === '' || card.dataset.search.includes(q)) ? '' : 'none';
+            });
+        });
+    </script>
 {% endblock %}
