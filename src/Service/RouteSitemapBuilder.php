@@ -12,76 +12,70 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * Builds the markdown route outline -- shared by RouteSitemapCommand (CLI)
  * and FieldReportController's web page (Fields nav > Route Sitemap), so
  * there's exactly one place that knows how to render this.
+ *
+ * Grouped by controller class (not by entity) -- an agent or dev exploring
+ * an unfamiliar app thinks "what does AccController do", not "what routes
+ * touch the Acc entity", and grouping by controller means covered and
+ * not-yet-covered routes for the same class show up together instead of
+ * being split across two disconnected sections.
  */
 final class RouteSitemapBuilder
 {
     public function __construct(
         private readonly RouteMetaRegistry $routeRegistry,
         #[Autowire('%field.all_routes%')] private readonly array $allRoutes = [],
+        #[Autowire('%field.controller_prefixes%')] private readonly array $controllerPrefixes = [],
     ) {
     }
 
     public function render(bool $includeGaps = true): string
     {
+        $byName = [];
+        foreach ($this->routeRegistry->all() as $d) {
+            $byName[$d->name] = $d;
+        }
+
+        // Group every route (covered or not) by controller class, using
+        // $allRoutes as the authoritative full list and $byName to enrich
+        // covered ones with their #[RouteMeta] payload.
+        $byController = [];
+        foreach ($this->allRoutes as $r) {
+            if (!$includeGaps && !$r['hasMeta']) {
+                continue;
+            }
+            $byController[$r['controllerClass']][] = [
+                'name'     => $r['name'],
+                'path'     => $r['path'],
+                'meta'     => $byName[$r['name']] ?? null,
+            ];
+        }
+        ksort($byController);
+
         $lines = [];
         $lines[] = '# Route Sitemap';
         $lines[] = '';
         $lines[] = sprintf(
-            '%d of %d routes carry `#[RouteMeta]` (%d%% coverage).',
+            '%d of %d routes carry `#[RouteMeta]` (%d%%), across %d controller(s).',
             \count($this->routeRegistry->all()),
             \count($this->allRoutes),
-            $this->allRoutes === [] ? 0 : (int) round(100 * \count($this->routeRegistry->all()) / \count($this->allRoutes)),
+            $this->coverage()['percent'],
+            \count($byController),
         );
         $lines[] = '';
 
-        $byEntity = [];
-        $appLevel = [];
-        foreach ($this->routeRegistry->all() as $d) {
-            if ($d->entity !== null) {
-                $byEntity[$d->entity][] = $d;
-            } else {
-                $appLevel[] = $d;
-            }
-        }
-        ksort($byEntity);
+        foreach ($byController as $controllerClass => $routes) {
+            $short = substr((string) strrchr($controllerClass, '\\'), 1) ?: $controllerClass;
+            $prefix = $this->controllerPrefixes[$controllerClass] ?? null;
+            $heading = $prefix !== null ? "{$short} (`{$prefix}`)" : $short;
 
-        if ($appLevel !== []) {
-            $lines[] = '## App-level pages';
+            $lines[] = "## {$heading}";
             $lines[] = '';
-            foreach (self::sortByParentsThenName($appLevel) as $d) {
-                $lines[] = self::renderRoute($d);
-            }
-            $lines[] = '';
-        }
 
-        foreach ($byEntity as $entityClass => $routes) {
-            $short = substr((string) strrchr($entityClass, '\\'), 1) ?: $entityClass;
-            $lines[] = "## {$short}";
-            $lines[] = '';
-            foreach (self::sortByPurpose($routes) as $d) {
-                $lines[] = self::renderRoute($d);
-            }
-            $lines[] = '';
-        }
-
-        if ($includeGaps) {
-            $missing = array_values(array_filter($this->allRoutes, static fn(array $r) => !$r['hasMeta']));
-            $lines[] = sprintf('## ⚠ Missing `#[RouteMeta]` (%d)', \count($missing));
-            $lines[] = '';
-            if ($missing === []) {
-                $lines[] = 'None — full coverage.';
-            } else {
-                $byController = [];
-                foreach ($missing as $r) {
-                    $byController[$r['controller']][] = $r;
-                }
-                ksort($byController);
-                foreach ($byController as $controller => $routes) {
-                    $lines[] = "**{$controller}**";
-                    foreach ($routes as $r) {
-                        $lines[] = "- `{$r['name']}` — `{$r['path']}`";
-                    }
-                }
+            usort($routes, static fn(array $a, array $b) => $a['name'] <=> $b['name']);
+            foreach ($routes as $r) {
+                $lines[] = $r['meta'] !== null
+                    ? self::renderRoute($r['meta'])
+                    : sprintf('- ⚠ **%s** `%s` — _missing `#[RouteMeta]`_', $r['name'], $r['path']);
             }
             $lines[] = '';
         }
@@ -115,22 +109,5 @@ final class RouteSitemapBuilder
             $audience,
             $d->description,
         );
-    }
-
-    /** @param list<RouteMetaDescriptor> $routes @return list<RouteMetaDescriptor> */
-    private static function sortByParentsThenName(array $routes): array
-    {
-        usort($routes, static fn(RouteMetaDescriptor $a, RouteMetaDescriptor $b) =>
-            (\count($a->parents) <=> \count($b->parents)) ?: ($a->name <=> $b->name));
-        return $routes;
-    }
-
-    /** @param list<RouteMetaDescriptor> $routes @return list<RouteMetaDescriptor> */
-    private static function sortByPurpose(array $routes): array
-    {
-        $order = ['dashboard' => 0, 'list' => 1, 'show' => 2, 'new' => 3, 'edit' => 4, 'delete' => 5, 'export' => 6, 'api' => 7, 'custom' => 8];
-        usort($routes, static fn(RouteMetaDescriptor $a, RouteMetaDescriptor $b) =>
-            ($order[$a->purpose->value] ?? 9) <=> ($order[$b->purpose->value] ?? 9));
-        return $routes;
     }
 }

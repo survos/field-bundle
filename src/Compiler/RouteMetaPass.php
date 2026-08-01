@@ -36,16 +36,25 @@ final class RouteMetaPass implements CompilerPassInterface
         // filtered out below), so coverage-gap reporting (RouteSitemapCommand)
         // needs this separate, unfiltered list.
         $allRoutes = [];
+        // Class-level #[Route] prefix per controller, e.g. TenantController's
+        // '/{tenantId}' -- shown next to each controller's heading in the
+        // sitemap so "AccController" reads as "AccController (/{tenantId}/{accId})".
+        $classPrefixes = [];
 
         foreach (ControllerAtlasBuilder::build($container) as $route) {
             $hits = $route->attributesOf(RouteMeta::class);
 
             $allRoutes[] = [
-                'name'       => $route->name,
-                'path'       => $route->path,
-                'controller' => $route->controller(),
-                'hasMeta'    => $hits !== [],
+                'name'            => $route->name,
+                'path'            => $route->path,
+                'controller'      => $route->controller(),
+                'controllerClass' => $route->controllerClass,
+                'hasMeta'         => $hits !== [],
             ];
+
+            if (!\array_key_exists($route->controllerClass, $classPrefixes)) {
+                $classPrefixes[$route->controllerClass] = self::classRoutePrefix($route);
+            }
 
             if ($hits === []) {
                 continue;
@@ -91,6 +100,7 @@ final class RouteMetaPass implements CompilerPassInterface
 
         usort($allRoutes, static fn (array $a, array $b) => $a['controller'] <=> $b['controller']);
         $container->setParameter('field.all_routes', $allRoutes);
+        $container->setParameter('field.controller_prefixes', $classPrefixes);
     }
 
     /**
@@ -104,6 +114,19 @@ final class RouteMetaPass implements CompilerPassInterface
             }
         }
         return [];
+    }
+
+    /** Class-level #[Route(...)] path, if the controller has one. */
+    private static function classRoutePrefix(RouteEntry $route): ?string
+    {
+        foreach ($route->classAttributes as $attr) {
+            if ($attr['class'] === \Symfony\Component\Routing\Attribute\Route::class) {
+                $args = $attr['args'];
+                $path = $args['path'] ?? $args[0] ?? null;
+                return \is_string($path) ? $path : null;
+            }
+        }
+        return null;
     }
 
     private static function toDefinition(RouteMetaDescriptor $d): Definition

@@ -45,10 +45,11 @@ class SurvosFieldBundle extends AbstractBundle
         $this->captureRouteConfig($config);
         $this->registerRouteLoader($builder);
 
-        // Default so RouteSitemapCommand's #[Autowire('%field.all_routes%')]
-        // resolves even if RouteMetaPass hasn't run yet (pass ordering) --
-        // the pass overwrites this with the real atlas once it does run.
+        // Defaults so RouteSitemapBuilder's #[Autowire('%field.…%')] params
+        // resolve even if RouteMetaPass hasn't run yet (pass ordering) --
+        // the pass overwrites these with the real atlas once it does run.
         $builder->setParameter('field.all_routes', []);
+        $builder->setParameter('field.controller_prefixes', []);
 
         $container->services()
             ->defaults()
