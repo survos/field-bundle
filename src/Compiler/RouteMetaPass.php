@@ -31,9 +31,22 @@ final class RouteMetaPass implements CompilerPassInterface
         }
 
         $descriptors = [];
+        // Every named route from the atlas, covered or not -- RouteMetaRegistry
+        // only ever sees the covered subset (routes without #[RouteMeta] are
+        // filtered out below), so coverage-gap reporting (RouteSitemapCommand)
+        // needs this separate, unfiltered list.
+        $allRoutes = [];
 
         foreach (ControllerAtlasBuilder::build($container) as $route) {
             $hits = $route->attributesOf(RouteMeta::class);
+
+            $allRoutes[] = [
+                'name'       => $route->name,
+                'path'       => $route->path,
+                'controller' => $route->controller(),
+                'hasMeta'    => $hits !== [],
+            ];
+
             if ($hits === []) {
                 continue;
             }
@@ -75,6 +88,9 @@ final class RouteMetaPass implements CompilerPassInterface
             ->setArgument('$descriptors', $definitions);
 
         $container->setParameter('field.route_meta_count', count($definitions));
+
+        usort($allRoutes, static fn (array $a, array $b) => $a['controller'] <=> $b['controller']);
+        $container->setParameter('field.all_routes', $allRoutes);
     }
 
     /**

@@ -7,6 +7,7 @@ namespace Survos\FieldBundle;
 use Survos\Kit\SurvosKitBundle;
 use Survos\Kit\Traits\HasConfigurableRoutes;
 use Survos\FieldBundle\Command\MetaExportCommand;
+use Survos\FieldBundle\Command\RouteSitemapCommand;
 use Survos\FieldBundle\Compiler\EntityMetaPass;
 use Survos\FieldBundle\Compiler\RouteMetaPass;
 use Survos\FieldBundle\Controller\EntityDashboardController;
@@ -42,6 +43,11 @@ class SurvosFieldBundle extends AbstractBundle
         $this->captureRouteConfig($config);
         $this->registerRouteLoader($builder);
 
+        // Default so RouteSitemapCommand's #[Autowire('%field.all_routes%')]
+        // resolves even if RouteMetaPass hasn't run yet (pass ordering) --
+        // the pass overwrites this with the real atlas once it does run.
+        $builder->setParameter('field.all_routes', []);
+
         $container->services()
             ->defaults()
             ->autowire()
@@ -52,6 +58,7 @@ class SurvosFieldBundle extends AbstractBundle
             ->set(RouteMetaRegistry::class)->public()->arg('$descriptors', [])
             ->set(EntityGlobalsExtension::class)
             ->set(MetaExportCommand::class)
+            ->set(RouteSitemapCommand::class)
             // ValueResolverInterface — autoconfigure tags it as
             // controller.argument_value_resolver. Closes the URL→entity
             // loop for any entity carrying #[RouteIdentity], removing the
