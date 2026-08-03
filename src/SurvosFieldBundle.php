@@ -122,7 +122,9 @@ class SurvosFieldBundle extends AbstractBundle
             $builder->prependExtensionConfig('ux_icons', [
                 'aliases' => [
                     'api'      => 'tabler:api',
+                    'code'     => 'tabler:code',
                     'database' => 'mdi:database',
+                    'map'      => 'tabler:map',
                     'meili'    => 'mdi:database-search',
                     'search'   => 'tabler:search',
                 ],
