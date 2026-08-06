@@ -79,6 +79,31 @@ final class Field
          * Common values: 'date', 'datetime', 'currency', 'percent', 'bytes', 'boolean'.
          */
         public readonly ?string $format = null,
+
+        /**
+         * This field's value(s) (scalar or array) might resolve against an external authority
+         * source (Wikidata, OpenStreetMap/Nominatim, GeoNames, ...) — a first-class-callable
+         * reference to the static method that performs the lookup, e.g.
+         * `authority: FpusTagAuthorityResolver::resolvePoi(...)` (PHP 8.5's "closures in constant
+         * expressions" — see https://wiki.php.net/rfc/closures_in_const_expr — is what makes a
+         * callable usable here at all; on PHP < 8.5 this argument position simply can't be filled
+         * with anything but null). A generic listener can reflect a row's fields, find one flagged
+         * this way, and call `($field->authority)($value)` — no separate string-to-service lookup
+         * table needed, the attribute IS the resolution strategy.
+         *
+         * DO NOT set this on a field declared in a shared library (survos/data-contracts and
+         * friends): every existing consumer of this attribute (FolioSchemaSnapshotter,
+         * survos/grid-bundle, survos/meili-bundle) unconditionally calls
+         * `getAttributes(Field::class)[0]->newInstance()` on EVERY #[Field]-attributed property of
+         * every DTO a folio uses — not only when the authority feature is wanted. Since attribute
+         * arguments are lazily-evaluated constant expressions (resolved on newInstance(), not on
+         * autoload), referencing an app-specific resolver class here means any app lacking that
+         * class hits a fatal "class not found" the next time normal schema-building walks the
+         * property — immediately, for every consumer, not just ones that asked for this feature.
+         * Safe usage: only on a field an app itself declares (or redeclares via an app-owned DTO
+         * subclass that shadows a shared property specifically to attach this).
+         */
+        public readonly ?\Closure $authority = null,
     ) {}
 
     /** True when the widget renders as a selectable list (Select, Boolean). */
