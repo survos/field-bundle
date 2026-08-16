@@ -154,6 +154,42 @@
                     {% endif %}
                 </div>
             </div>
+
+            <div class="col-12 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header"><h3 class="card-title">Elasticsearch</h3></div>
+                    <div class="card-body">
+                        {% if elastic %}
+                            <dl class="row mb-0">
+                                <dt class="col-4">Index</dt><dd class="col-8"><code>{{ elastic.index }}</code></dd>
+                                <dt class="col-4">Documents</dt>
+                                <dd class="col-8">
+                                    {% if elastic.exists %}{{ elastic.docs|number_format }}{% else %}<span class="badge bg-secondary-lt">not created</span>{% endif %}
+                                </dd>
+                                <dt class="col-4">Schema</dt>
+                                <dd class="col-8">
+                                    {% if elastic.warnings > 0 %}
+                                        <span class="badge bg-yellow-lt">{{ elastic.warnings }} to review</span>
+                                    {% elseif elastic.exists %}
+                                        <span class="badge bg-green-lt">clean</span>
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        {% elseif not elasticServiceAvailable %}
+                            <div class="text-muted">survos/elastic-bundle is not installed in this app.</div>
+                        {% else %}
+                            <div class="text-muted">No Elasticsearch-backed search declares this entity.</div>
+                        {% endif %}
+                    </div>
+                    {% if elastic and elastic.url %}
+                        <div class="card-footer">
+                            <a href="{{ elastic.url }}" class="btn btn-sm btn-outline-primary">Index &amp; schema</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <div class="row row-cards mb-3">

@@ -23,6 +23,9 @@ final class EntityDashboardController extends AbstractController
         private readonly ?object $chatWorkspaceResolver = null,
         private readonly ?object $uxSearchRegistry = null,
         private readonly ?object $workflowHelper = null,
+        // survos/elastic-bundle's ElasticIndexService, duck-typed like the others so field-bundle
+        // keeps no dependency on it — apps without Elasticsearch simply get null.
+        private readonly ?object $elasticIndexService = null,
     ) {}
 
     #[Route('/entity/{code}', name: 'survos_entity_dashboard', methods: ['GET'])]
@@ -47,6 +50,8 @@ final class EntityDashboardController extends AbstractController
             'uxSearchRegistryAvailable' => $this->uxSearchRegistry !== null,
             'workflows' => $this->resolveWorkflows($class),
             'workflowRegistryAvailable' => $this->workflowHelper !== null,
+            'elastic' => $this->resolveElastic($class),
+            'elasticServiceAvailable' => $this->elasticIndexService !== null,
             'browseUrl' => $this->resolveBrowseUrl($code),
             'constantsUrl' => $this->routeUrl('survos_entity_constants', []),
         ]);
@@ -180,6 +185,39 @@ final class EntityDashboardController extends AbstractController
         }
 
         return $constants;
+    }
+
+    /**
+     * The Elasticsearch index backing this entity, if any.
+     *
+     * Mirrors resolveMeili(): duck-typed so field-bundle never requires survos/elastic-bundle.
+     * `warningCount` is what makes this worth a card rather than a link — it is the schema drift
+     * and configuration count from the elastic admin page, surfaced where you are already looking
+     * at the entity.
+     *
+     * @return array{index: string, docs: int, exists: bool, warnings: int, url: ?string}|null
+     */
+    private function resolveElastic(string $class): ?array
+    {
+        if (!$this->elasticIndexService || !method_exists($this->elasticIndexService, 'reports')) {
+            return null;
+        }
+
+        foreach ($this->elasticIndexService->reports() as $report) {
+            if (($report->entityClass ?? null) !== $class) {
+                continue;
+            }
+
+            return [
+                'index' => $report->index,
+                'docs' => $report->documentCount,
+                'exists' => $report->exists,
+                'warnings' => $report->warningCount,
+                'url' => $this->routeUrl('survos_elastic_admin_show', ['code' => $report->code]),
+            ];
+        }
+
+        return null;
     }
 
     private function resolveMeili(string $class): ?array

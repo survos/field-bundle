@@ -103,6 +103,10 @@ class SurvosFieldBundle extends AbstractBundle
             ->setArgument(
                 '$workflowHelper',
                 new Reference('Survos\\StateBundle\\Service\\WorkflowHelperService', ContainerInterface::NULL_ON_INVALID_REFERENCE),
+            )
+            ->setArgument(
+                '$elasticIndexService',
+                new Reference('Survos\\ElasticBundle\\Service\\ElasticIndexService', ContainerInterface::NULL_ON_INVALID_REFERENCE),
             );
     }
 
