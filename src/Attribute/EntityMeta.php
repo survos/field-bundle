@@ -39,6 +39,9 @@ final class EntityMeta
         /** Whether to include this entity in the admin navbar and dashboard. */
         public readonly bool $adminBrowsable = true,
 
+        /** Whether the admin navbar may query and display this entity's record count. */
+        public readonly bool $adminShowCount = true,
+
         /**
          * Named browse views for development/admin browsing.
          *

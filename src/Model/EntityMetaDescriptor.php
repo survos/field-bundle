@@ -19,6 +19,7 @@ final class EntityMetaDescriptor
         public readonly ?string $iconClass     = null,
         public readonly ?string $description   = null,
         public readonly bool    $adminBrowsable = true,
+        public readonly bool    $adminShowCount = true,
         public readonly bool    $hasApiResource = false,
         public readonly bool    $hasMeiliIndex  = false,
         /** snake_case routing code, e.g. "app_song" / "pixie_foo". Computed at compile time. */
