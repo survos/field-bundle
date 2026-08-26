@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Survos\FieldBundle;
 
+use Doctrine\Persistence\ManagerRegistry;
+use Survos\Kit\AbstractSurvosBundle;
 use Survos\Kit\SurvosKitBundle;
 use Survos\Kit\Traits\HasConfigurableRoutes;
 use Survos\FieldBundle\Command\MetaExportCommand;
@@ -26,10 +28,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Kernel\RequiredBundle;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Twig\Extension\AbstractExtension;
 
 #[RequiredBundle(SurvosKitBundle::class)]
-class SurvosFieldBundle extends AbstractBundle
+// Symfony\Component\HttpKernel\Bundle\Bundle <-- Flex auto-registration marker (see Survos\Kit\AbstractSurvosBundle)
+final class SurvosFieldBundle extends AbstractSurvosBundle
 {
     use HasConfigurableRoutes;
 
@@ -42,6 +45,8 @@ class SurvosFieldBundle extends AbstractBundle
 
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
+        parent::loadExtension($config, $container, $builder);
+
         $this->captureRouteConfig($config);
         $this->registerRouteLoader($builder);
 
@@ -51,7 +56,7 @@ class SurvosFieldBundle extends AbstractBundle
         $builder->setParameter('field.all_routes', []);
         $builder->setParameter('field.controller_prefixes', []);
 
-        $container->services()
+        $services = $container->services()
             ->defaults()
             ->autowire()
             ->autoconfigure()
@@ -59,16 +64,23 @@ class SurvosFieldBundle extends AbstractBundle
             ->set(JsonFormatter::class)
             ->set(EntityMetaRegistry::class)->public()->arg('$descriptors', [])
             ->set(RouteMetaRegistry::class)->public()->arg('$descriptors', [])
-            ->set(EntityGlobalsExtension::class)
             ->set(MetaExportCommand::class)
             ->set(RouteSitemapBuilder::class)
             ->set(RouteSitemapCommand::class)
-            ->set(FieldReportController::class)->public()->tag('controller.service_arguments')
+            ->set(FieldReportController::class)->public()->tag('controller.service_arguments');
+
+        if (class_exists(AbstractExtension::class)) {
+            $services->set(EntityGlobalsExtension::class);
+        }
+
+        // Doctrine is an optional integration. Register the entity argument resolver only
+        // when its contract is installed; DTO-only consumers still get FieldReader.
+        if (interface_exists(ManagerRegistry::class)) {
             // ValueResolverInterface — autoconfigure tags it as
-            // controller.argument_value_resolver. Closes the URL→entity
-            // loop for any entity carrying #[RouteIdentity], removing the
-            // need for #[MapEntity(mapping: ...)] on every controller.
-            ->set(RouteIdentityValueResolver::class);
+            // controller.argument_value_resolver. Closes the URL→entity loop for entities
+            // carrying #[RouteIdentity].
+            $services->set(RouteIdentityValueResolver::class);
+        }
 
         if (class_exists(\Survos\TablerBundle\Event\MenuEvent::class)) {
             $container->services()
