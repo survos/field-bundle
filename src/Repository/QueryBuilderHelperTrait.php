@@ -47,7 +47,8 @@ trait QueryBuilderHelperTrait
 
         $counts = [];
         foreach ($qb->groupBy('e.' . $field)->getQuery()->getResult() as $row) {
-            $counts[$row['field']] = (int) $row['c'];
+            // Preserve the empty-string bucket used for NULL groups without implicit key conversion.
+            $counts[$row['field'] ?? ''] = (int) $row['c'];
         }
 
         return $counts;
