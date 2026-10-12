@@ -54,7 +54,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 final class RouteIdentityValueResolver implements ValueResolverInterface
 {
     public function __construct(
-        private readonly ManagerRegistry $managerRegistry,
+        private readonly ?ManagerRegistry $managerRegistry = null,
     ) {
     }
 
@@ -63,6 +63,11 @@ final class RouteIdentityValueResolver implements ValueResolverInterface
      */
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
+        // doctrine/persistence can be installed without a configured Doctrine registry.
+        if ($this->managerRegistry === null) {
+            return [];
+        }
+
         $class = $argument->getType();
         if ($class === null || !class_exists($class)) {
             return [];
