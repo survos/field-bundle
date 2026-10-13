@@ -104,7 +104,8 @@ final class Field
          * subclass that shadows a shared property specifically to attach this).
          */
         public readonly ?\Closure $authority = null,
-    ) {}
+    ) {
+    }
 
     /** True when the widget renders as a selectable list (Select, Boolean). */
     public bool $isBrowsable {

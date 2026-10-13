@@ -26,19 +26,19 @@ final class EntityMetaRegistry
         private readonly array $descriptors = [],
     ) {
         $byClass = [];
-        $byCode  = [];
+        $byCode = [];
         $byGroup = [];
 
         foreach ($descriptors as $descriptor) {
             $byClass[$descriptor->class] = $descriptor;
-            if ($descriptor->code !== '') {
+            if ('' !== $descriptor->code) {
                 $byCode[$descriptor->code] = $descriptor;
             }
             $byGroup[$descriptor->group][] = $descriptor;
         }
 
         $this->byClass = $byClass;
-        $this->byCode  = $byCode;
+        $this->byCode = $byCode;
         $this->byGroup = $byGroup;
     }
 

@@ -29,16 +29,16 @@ final class FieldTest extends TestCase
     public function testExplicitValues(): void
     {
         $field = new Field(
-            transKey:   'tenant.status',
+            transKey: 'tenant.status',
             searchable: true,
-            sortable:   true,
+            sortable: true,
             filterable: true,
-            widget:     Widget::Select,
-            facet:      true,
-            visible:    false,
-            order:      10,
-            width:      '8rem',
-            format:     'status',
+            widget: Widget::Select,
+            facet: true,
+            visible: false,
+            order: 10,
+            width: '8rem',
+            format: 'status',
         );
 
         self::assertSame('tenant.status', $field->transKey);

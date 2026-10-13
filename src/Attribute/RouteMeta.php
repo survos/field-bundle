@@ -44,8 +44,8 @@ final class RouteMeta
      *                                                     Only needed when the variable name doesn't match an
      *                                                     entity by `{shortName}…` convention (e.g. `/compare/{a}/{b}`
      *                                                     where both are Tenant).
-     * @param list<string>                $tags            Free-form labels ('admin', 'api', 'export', 'beta', …).
-     * @param list<string>                $parents         Route names to consider as parents for breadcrumbs.
+     * @param list<string>                $tags            free-form labels ('admin', 'api', 'export', 'beta', …)
+     * @param list<string>                $parents         route names to consider as parents for breadcrumbs
      */
     public function __construct(
         /** Developer-facing English prose. Required. Used for AI introspection, OpenAPI, dashboards. */
@@ -79,5 +79,6 @@ final class RouteMeta
         public readonly array $tags = [],
 
         public readonly array $parents = [],
-    ) {}
+    ) {
+    }
 }

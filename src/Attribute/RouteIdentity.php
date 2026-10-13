@@ -40,19 +40,20 @@ namespace Survos\FieldBundle\Attribute;
 final class RouteIdentity
 {
     /**
-     * @param string         $field   Property name OR getter to read for this entity's value.
-     *                                 'code' tries `$entity->code`, then `$entity->getCode()`.
-     * @param list<string>   $parents Property names of associations to walk for parent params.
-     *                                 Each target SHOULD also carry `#[RouteIdentity]`; if a target
-     *                                 only has the legacy trait it will be detected by interface
-     *                                 and `getRp()` will be called instead.
-     * @param string|null    $key     Override the URL parameter key for this entity. Defaults to
-     *                                 `{lcfirst(shortName)}Id` (e.g. Tenant => 'tenantId') for
-     *                                 backward compatibility with existing UNIQUE_PARAMETERS.
+     * @param string       $field   Property name OR getter to read for this entity's value.
+     *                              'code' tries `$entity->code`, then `$entity->getCode()`.
+     * @param list<string> $parents Property names of associations to walk for parent params.
+     *                              Each target SHOULD also carry `#[RouteIdentity]`; if a target
+     *                              only has the legacy trait it will be detected by interface
+     *                              and `getRp()` will be called instead.
+     * @param string|null  $key     Override the URL parameter key for this entity. Defaults to
+     *                              `{lcfirst(shortName)}Id` (e.g. Tenant => 'tenantId') for
+     *                              backward compatibility with existing UNIQUE_PARAMETERS.
      */
     public function __construct(
-        public readonly string  $field,
-        public readonly array   $parents = [],
+        public readonly string $field,
+        public readonly array $parents = [],
         public readonly ?string $key = null,
-    ) {}
+    ) {
+    }
 }

@@ -11,25 +11,26 @@ namespace Survos\FieldBundle\Model;
 final class EntityMetaDescriptor
 {
     public function __construct(
-        public readonly string  $class,
-        public readonly string  $label,
-        public readonly string  $group,
-        public readonly int     $order,
-        public readonly ?string $icon          = null,
-        public readonly ?string $iconClass     = null,
-        public readonly ?string $description   = null,
-        public readonly bool    $adminBrowsable = true,
-        public readonly bool    $adminShowCount = true,
-        public readonly bool    $hasApiResource = false,
-        public readonly bool    $hasMeiliIndex  = false,
+        public readonly string $class,
+        public readonly string $label,
+        public readonly string $group,
+        public readonly int $order,
+        public readonly ?string $icon = null,
+        public readonly ?string $iconClass = null,
+        public readonly ?string $description = null,
+        public readonly bool $adminBrowsable = true,
+        public readonly bool $adminShowCount = true,
+        public readonly bool $hasApiResource = false,
+        public readonly bool $hasMeiliIndex = false,
         /** snake_case routing code, e.g. "app_song" / "pixie_foo". Computed at compile time. */
-        public readonly string  $code           = '',
+        public readonly string $code = '',
         /** Twig globals key, e.g. "APP_ENTITY_SONG". Computed at compile time. */
-        public readonly string  $globalKey      = '',
+        public readonly string $globalKey = '',
         /** @var array<string, EntityViewDescriptor> */
-        public readonly array   $views          = [],
-        public readonly string  $defaultView    = 'table',
-    ) {}
+        public readonly array $views = [],
+        public readonly string $defaultView = 'table',
+    ) {
+    }
 
     public function getShortName(): string
     {

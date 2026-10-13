@@ -18,7 +18,8 @@ final class MappingRegistry
     /** @param array<class-string, array<string, string>> $map */
     public function __construct(
         private readonly array $map = [],
-    ) {}
+    ) {
+    }
 
     /**
      * Resolve a source key to a DTO property name for the given class.
@@ -48,6 +49,7 @@ final class MappingRegistry
     {
         $map = $this->map[$class] ?? [];
         unset($map['__regex__']);
+
         return $map;
     }
 

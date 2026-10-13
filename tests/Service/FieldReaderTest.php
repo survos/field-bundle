@@ -34,7 +34,7 @@ final class FieldReaderTest extends TestCase
         $descriptors = $this->reader->getDescriptors($class::class);
 
         self::assertCount(2, $descriptors);
-        self::assertSame('title',  $descriptors[0]->name);
+        self::assertSame('title', $descriptors[0]->name);
         self::assertSame('status', $descriptors[1]->name);
     }
 
@@ -120,7 +120,7 @@ final class FieldReaderTest extends TestCase
             public string $name = '';
         };
 
-        $first  = $this->reader->getDescriptors($class::class);
+        $first = $this->reader->getDescriptors($class::class);
         $second = $this->reader->getDescriptors($class::class);
         self::assertSame($first, $second);
     }

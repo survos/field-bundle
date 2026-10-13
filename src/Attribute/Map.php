@@ -14,20 +14,20 @@ namespace Survos\FieldBundle\Attribute;
 class Map
 {
     /**
-     * @param string|list<string>|null $source One or more source keys to read from the record, in
-     *                            priority order — the first key present with a non-null value wins
-     *                            (the canonical "alias list", e.g. ['title', 'dcterms:title', 'titulo']).
-     *                            Falls back to the property name when none match.
-     * @param string|null $regex Regex applied to record keys; first match wins.
-     * @param string|null $if Conditional: 'isset' = skip if resolved value is null.
-     * @param string|null $delim Delimiter for splitting a string into an array property.
-     * @param int $priority Mapper priority when multiple sources exist; higher wins.
-     * @param string[] $when Only apply when context['dataset'] is in this list.
-     * @param string[] $except Skip when context['dataset'] is in this list.
-     * @param bool $facet Meilisearch filterableAttributes.
-     * @param bool $sortable Meilisearch sortableAttributes.
-     * @param bool $searchable Meilisearch searchableAttributes.
-     * @param bool $translatable Mark field for translation pipelines.
+     * @param string|list<string>|null $source       One or more source keys to read from the record, in
+     *                                               priority order — the first key present with a non-null value wins
+     *                                               (the canonical "alias list", e.g. ['title', 'dcterms:title', 'titulo']).
+     *                                               Falls back to the property name when none match.
+     * @param string|null              $regex        regex applied to record keys; first match wins
+     * @param string|null              $if           conditional: 'isset' = skip if resolved value is null
+     * @param string|null              $delim        delimiter for splitting a string into an array property
+     * @param int                      $priority     mapper priority when multiple sources exist; higher wins
+     * @param string[]                 $when         only apply when context['dataset'] is in this list
+     * @param string[]                 $except       skip when context['dataset'] is in this list
+     * @param bool                     $facet        meilisearch filterableAttributes
+     * @param bool                     $sortable     meilisearch sortableAttributes
+     * @param bool                     $searchable   meilisearch searchableAttributes
+     * @param bool                     $translatable mark field for translation pipelines
      */
     public function __construct(
         public readonly string|array|null $source = null,
@@ -52,7 +52,7 @@ class Map
      */
     public function sources(): array
     {
-        if ($this->source === null) {
+        if (null === $this->source) {
             return [];
         }
 

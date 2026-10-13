@@ -19,8 +19,9 @@ namespace Survos\FieldBundle\Attribute;
 final class Mapper
 {
     public function __construct(
-        public readonly array $when     = [],
-        public readonly array $except   = [],
-        public readonly int   $priority = 10,
-    ) {}
+        public readonly array $when = [],
+        public readonly array $except = [],
+        public readonly int $priority = 10,
+    ) {
+    }
 }

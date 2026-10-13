@@ -56,33 +56,33 @@ final class RouteSitemapBuilder
 
             $meta = $byName[$r['name']] ?? null;
             $byController[$r['controllerClass']][] = [
-                'name'        => $r['name'],
-                'path'        => $r['path'],
-                'hasMeta'     => $r['hasMeta'],
-                'methods'     => $meta?->methods ?? [],
+                'name' => $r['name'],
+                'path' => $r['path'],
+                'hasMeta' => $r['hasMeta'],
+                'methods' => $meta?->methods ?? [],
                 'description' => $meta?->description,
-                'audience'    => $meta?->audience->value,
-                'purpose'     => $meta?->purpose->value,
-                'label'       => $meta?->label,
-                'entity'      => $meta?->entity,
-                'tags'        => $meta?->tags ?? [],
+                'audience' => $meta?->audience->value,
+                'purpose' => $meta?->purpose->value,
+                'label' => $meta?->label,
+                'entity' => $meta?->entity,
+                'tags' => $meta?->tags ?? [],
             ];
         }
         ksort($byController);
 
         $controllers = [];
         foreach ($byController as $controllerClass => $routes) {
-            usort($routes, static fn(array $a, array $b) => $a['name'] <=> $b['name']);
+            usort($routes, static fn (array $a, array $b) => $a['name'] <=> $b['name']);
             $controllers[] = [
-                'class'     => $controllerClass,
+                'class' => $controllerClass,
                 'shortName' => substr((string) strrchr($controllerClass, '\\'), 1) ?: $controllerClass,
-                'prefix'    => $this->controllerPrefixes[$controllerClass] ?? null,
-                'routes'    => $routes,
+                'prefix' => $this->controllerPrefixes[$controllerClass] ?? null,
+                'routes' => $routes,
             ];
         }
 
         return [
-            'coverage'    => $this->coverage(),
+            'coverage' => $this->coverage(),
             'controllers' => $controllers,
         ];
     }
@@ -104,7 +104,7 @@ final class RouteSitemapBuilder
         $lines[] = '';
 
         foreach ($data['controllers'] as $c) {
-            $heading = $c['prefix'] !== null ? "{$c['shortName']} (`{$c['prefix']}`)" : $c['shortName'];
+            $heading = null !== $c['prefix'] ? "{$c['shortName']} (`{$c['prefix']}`)" : $c['shortName'];
             $lines[] = "## {$heading}";
             $lines[] = '';
 
@@ -127,8 +127,8 @@ final class RouteSitemapBuilder
 
         return [
             'covered' => $covered,
-            'total'   => $total,
-            'percent' => $total === 0 ? 0 : (int) round(100 * $covered / $total),
+            'total' => $total,
+            'percent' => 0 === $total ? 0 : (int) round(100 * $covered / $total),
         ];
     }
 
@@ -136,10 +136,10 @@ final class RouteSitemapBuilder
     private static function renderRouteLine(array $r): string
     {
         $audience = strtoupper((string) $r['audience']);
-        $methods  = implode('|', $r['methods']) ?: 'GET';
+        $methods = implode('|', $r['methods']) ?: 'GET';
 
         return sprintf(
-            "- **%s** `%s %s` [%s] — %s",
+            '- **%s** `%s %s` [%s] — %s',
             $r['label'] ?? $r['name'],
             $methods,
             $r['path'],

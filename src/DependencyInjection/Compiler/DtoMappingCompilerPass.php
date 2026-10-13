@@ -51,11 +51,11 @@ final class DtoMappingCompilerPass implements CompilerPassInterface
                 /** @var Map $map */
                 $map = $attr->newInstance();
 
-                if ($map->source !== null) {
+                if (null !== $map->source) {
                     $classMap[$map->source] = $propName;
                 }
 
-                if ($map->regex !== null) {
+                if (null !== $map->regex) {
                     $regexEntries[] = [$map->regex, $propName];
                 }
             }
@@ -64,7 +64,7 @@ final class DtoMappingCompilerPass implements CompilerPassInterface
             $classMap[$propName] = $propName;
         }
 
-        if ($regexEntries !== []) {
+        if ([] !== $regexEntries) {
             $classMap['__regex__'] = $regexEntries;
         }
 
@@ -75,12 +75,12 @@ final class DtoMappingCompilerPass implements CompilerPassInterface
     private function allProperties(\ReflectionClass $ref): array
     {
         $props = [];
-        $seen  = [];
+        $seen = [];
 
         do {
             foreach ($ref->getProperties() as $prop) {
                 if (!isset($seen[$prop->getName()])) {
-                    $props[]              = $prop;
+                    $props[] = $prop;
                     $seen[$prop->getName()] = true;
                 }
             }

@@ -5,9 +5,6 @@ declare(strict_types=1);
 namespace Survos\FieldBundle;
 
 use Doctrine\Persistence\ManagerRegistry;
-use Survos\Kit\AbstractSurvosBundle;
-use Survos\Kit\SurvosKitBundle;
-use Survos\Kit\Traits\HasConfigurableRoutes;
 use Survos\FieldBundle\Command\MetaExportCommand;
 use Survos\FieldBundle\Command\RouteSitemapCommand;
 use Survos\FieldBundle\Compiler\EntityMetaPass;
@@ -19,9 +16,12 @@ use Survos\FieldBundle\Registry\EntityMetaRegistry;
 use Survos\FieldBundle\Registry\RouteMetaRegistry;
 use Survos\FieldBundle\Service\FieldReader;
 use Survos\FieldBundle\Service\JsonFormatter;
-use Survos\FieldBundle\Service\RouteSitemapBuilder;
 use Survos\FieldBundle\Service\RouteIdentityValueResolver;
+use Survos\FieldBundle\Service\RouteSitemapBuilder;
 use Survos\FieldBundle\Twig\EntityGlobalsExtension;
+use Survos\Kit\AbstractSurvosBundle;
+use Survos\Kit\SurvosKitBundle;
+use Survos\Kit\Traits\HasConfigurableRoutes;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -137,12 +137,12 @@ final class SurvosFieldBundle extends AbstractSurvosBundle
         if ($builder->hasExtension('ux_icons')) {
             $builder->prependExtensionConfig('ux_icons', [
                 'aliases' => [
-                    'api'      => 'tabler:api',
-                    'code'     => 'tabler:code',
+                    'api' => 'tabler:api',
+                    'code' => 'tabler:code',
                     'database' => 'mdi:database',
-                    'map'      => 'tabler:map',
-                    'meili'    => 'mdi:database-search',
-                    'search'   => 'tabler:search',
+                    'map' => 'tabler:map',
+                    'meili' => 'mdi:database-search',
+                    'search' => 'tabler:search',
                 ],
             ]);
         }

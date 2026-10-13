@@ -38,7 +38,7 @@ final class JsonFormatter
 
         $json = htmlspecialchars($json, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
-        if ($wrapper === null || $wrapper === '') {
+        if (null === $wrapper || '' === $wrapper) {
             return $json;
         }
 
@@ -56,13 +56,13 @@ final class JsonFormatter
     {
         $html = '';
         foreach ($attributes as $name => $value) {
-            if (!is_string($name) || $name === '' || $value === false || $value === null) {
+            if (!is_string($name) || '' === $name || false === $value || null === $value) {
                 continue;
             }
 
             $escapedName = htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            if ($value === true) {
-                $html .= ' ' . $escapedName;
+            if (true === $value) {
+                $html .= ' '.$escapedName;
                 continue;
             }
 

@@ -45,18 +45,18 @@ final class RouteMetaPass implements CompilerPassInterface
             $hits = $route->attributesOf(RouteMeta::class);
 
             $allRoutes[] = [
-                'name'            => $route->name,
-                'path'            => $route->path,
-                'controller'      => $route->controller(),
+                'name' => $route->name,
+                'path' => $route->path,
+                'controller' => $route->controller(),
                 'controllerClass' => $route->controllerClass,
-                'hasMeta'         => $hits !== [],
+                'hasMeta' => [] !== $hits,
             ];
 
             if (!\array_key_exists($route->controllerClass, $classPrefixes)) {
                 $classPrefixes[$route->controllerClass] = self::classRoutePrefix($route);
             }
 
-            if ($hits === []) {
+            if ([] === $hits) {
                 continue;
             }
 
@@ -67,22 +67,22 @@ final class RouteMetaPass implements CompilerPassInterface
             $meta = new RouteMeta(...$merged);
 
             $descriptors[] = new RouteMetaDescriptor(
-                name:            $route->name,
-                path:            $route->path,
-                methods:         $route->methods,
-                controller:      $route->controller(),
-                description:     $meta->description,
-                entity:          $meta->entity,
+                name: $route->name,
+                path: $route->path,
+                methods: $route->methods,
+                controller: $route->controller(),
+                description: $meta->description,
+                entity: $meta->entity,
                 relatedEntities: $meta->relatedEntities,
-                params:          $meta->params,
-                purpose:         $meta->purpose,
-                label:           $meta->label,
-                audience:        $meta->audience,
-                sitemap:         $meta->sitemap,
-                changefreq:      $meta->changefreq,
-                priority:        $meta->priority,
-                tags:            $meta->tags,
-                parents:         $meta->parents,
+                params: $meta->params,
+                purpose: $meta->purpose,
+                label: $meta->label,
+                audience: $meta->audience,
+                sitemap: $meta->sitemap,
+                changefreq: $meta->changefreq,
+                priority: $meta->priority,
+                tags: $meta->tags,
+                parents: $meta->parents,
             );
         }
 
@@ -109,10 +109,11 @@ final class RouteMetaPass implements CompilerPassInterface
     private static function classMetaArgs(RouteEntry $route): array
     {
         foreach ($route->classAttributes as $attr) {
-            if ($attr['class'] === ControllerMeta::class) {
+            if (ControllerMeta::class === $attr['class']) {
                 return $attr['args'];
             }
         }
+
         return [];
     }
 
@@ -120,34 +121,36 @@ final class RouteMetaPass implements CompilerPassInterface
     private static function classRoutePrefix(RouteEntry $route): ?string
     {
         foreach ($route->classAttributes as $attr) {
-            if ($attr['class'] === \Symfony\Component\Routing\Attribute\Route::class) {
+            if (\Symfony\Component\Routing\Attribute\Route::class === $attr['class']) {
                 $args = $attr['args'];
                 $path = $args['path'] ?? $args[0] ?? null;
+
                 return \is_string($path) ? $path : null;
             }
         }
+
         return null;
     }
 
     private static function toDefinition(RouteMetaDescriptor $d): Definition
     {
         return new Definition(RouteMetaDescriptor::class, [
-            '$name'            => $d->name,
-            '$path'            => $d->path,
-            '$methods'         => $d->methods,
-            '$controller'      => $d->controller,
-            '$description'     => $d->description,
-            '$entity'          => $d->entity,
+            '$name' => $d->name,
+            '$path' => $d->path,
+            '$methods' => $d->methods,
+            '$controller' => $d->controller,
+            '$description' => $d->description,
+            '$entity' => $d->entity,
             '$relatedEntities' => $d->relatedEntities,
-            '$params'          => $d->params,
-            '$purpose'         => $d->purpose,
-            '$label'           => $d->label,
-            '$audience'        => $d->audience,
-            '$sitemap'         => $d->sitemap,
-            '$changefreq'      => $d->changefreq,
-            '$priority'        => $d->priority,
-            '$tags'            => $d->tags,
-            '$parents'         => $d->parents,
+            '$params' => $d->params,
+            '$purpose' => $d->purpose,
+            '$label' => $d->label,
+            '$audience' => $d->audience,
+            '$sitemap' => $d->sitemap,
+            '$changefreq' => $d->changefreq,
+            '$priority' => $d->priority,
+            '$tags' => $d->tags,
+            '$parents' => $d->parents,
         ]);
     }
 }

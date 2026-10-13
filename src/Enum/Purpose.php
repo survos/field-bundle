@@ -13,13 +13,13 @@ namespace Survos\FieldBundle\Enum;
  */
 enum Purpose: string
 {
-    case List      = 'list';        // collection listing — was 'index' in Symfony Maker conventions
-    case Show      = 'show';
+    case List = 'list';        // collection listing — was 'index' in Symfony Maker conventions
+    case Show = 'show';
     case Dashboard = 'dashboard';
-    case New       = 'new';
-    case Edit      = 'edit';
-    case Delete    = 'delete';
-    case Export    = 'export';
-    case Api       = 'api';
-    case Custom    = 'custom';
+    case New = 'new';
+    case Edit = 'edit';
+    case Delete = 'delete';
+    case Export = 'export';
+    case Api = 'api';
+    case Custom = 'custom';
 }

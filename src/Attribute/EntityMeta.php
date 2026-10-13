@@ -61,5 +61,6 @@ final class EntityMeta
 
         /** Default view code. Defaults to the first configured view, then "table". */
         public readonly ?string $defaultView = null,
-    ) {}
+    ) {
+    }
 }

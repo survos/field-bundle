@@ -28,13 +28,14 @@ final class RouteIdentityResolver
      * Result preserves order: parent chain first, then this entity's own
      * key. Extras are merged last, so callers can override any key.
      *
-     * @param  array<string, mixed> $extras
+     * @param array<string, mixed> $extras
+     *
      * @return array<string, mixed>
      */
     public static function paramsFor(object $entity, array $extras = []): array
     {
         $identity = self::lookup($entity::class);
-        if ($identity === null) {
+        if (null === $identity) {
             return self::legacyFallback($entity, $extras);
         }
 
@@ -42,7 +43,7 @@ final class RouteIdentityResolver
 
         foreach ($identity->parents as $parentProp) {
             $parent = self::readParent($entity, $parentProp);
-            if ($parent !== null) {
+            if (null !== $parent) {
                 $params = array_merge($params, self::paramsFor($parent));
             }
         }
@@ -78,9 +79,9 @@ final class RouteIdentityResolver
             return self::$cache[$class] = null;
         }
 
-        for ($cursor = $rc; $cursor !== false; $cursor = $cursor->getParentClass()) {
+        for ($cursor = $rc; false !== $cursor; $cursor = $cursor->getParentClass()) {
             $attrs = $cursor->getAttributes(RouteIdentity::class);
-            if ($attrs !== []) {
+            if ([] !== $attrs) {
                 return self::$cache[$class] = $attrs[0]->newInstance();
             }
         }
@@ -90,11 +91,12 @@ final class RouteIdentityResolver
 
     private static function keyFor(object $entity, RouteIdentity $identity): string
     {
-        if ($identity->key !== null) {
+        if (null !== $identity->key) {
             return $identity->key;
         }
         $short = (new \ReflectionClass($entity))->getShortName();
-        return lcfirst($short) . 'Id';
+
+        return lcfirst($short).'Id';
     }
 
     private static function readField(object $entity, string $field): mixed
@@ -103,17 +105,14 @@ final class RouteIdentityResolver
         if ($rc->hasProperty($field) && $rc->getProperty($field)->isPublic()) {
             return $entity->{$field};
         }
-        $getter = 'get' . ucfirst($field);
+        $getter = 'get'.ucfirst($field);
         if (method_exists($entity, $getter)) {
             return $entity->{$getter}();
         }
         if (method_exists($entity, $field)) {
             return $entity->{$field}();
         }
-        throw new \LogicException(sprintf(
-            '#[RouteIdentity] on %s declares field "%s" but neither $%s nor %s() is accessible.',
-            $entity::class, $field, $field, $getter,
-        ));
+        throw new \LogicException(sprintf('#[RouteIdentity] on %s declares field "%s" but neither $%s nor %s() is accessible.', $entity::class, $field, $field, $getter));
     }
 
     private static function readParent(object $entity, string $prop): ?object
@@ -121,13 +120,16 @@ final class RouteIdentityResolver
         $rc = new \ReflectionClass($entity);
         if ($rc->hasProperty($prop) && $rc->getProperty($prop)->isPublic()) {
             $value = $entity->{$prop};
+
             return \is_object($value) ? $value : null;
         }
-        $getter = 'get' . ucfirst($prop);
+        $getter = 'get'.ucfirst($prop);
         if (method_exists($entity, $getter)) {
             $value = $entity->{$getter}();
+
             return \is_object($value) ? $value : null;
         }
+
         return null;
     }
 
@@ -137,7 +139,8 @@ final class RouteIdentityResolver
      * fall back to {lcShortName}Id => getId(). This lets the resolver be
      * called on legacy entities without crashing.
      *
-     * @param  array<string, mixed> $extras
+     * @param array<string, mixed> $extras
+     *
      * @return array<string, mixed>
      */
     private static function legacyFallback(object $entity, array $extras): array
@@ -146,9 +149,6 @@ final class RouteIdentityResolver
             return $entity->getRp($extras);
         }
 
-        throw new \LogicException(sprintf(
-            '%s is missing #[RouteIdentity]. Add the attribute and use RouteIdentityTrait.',
-            $entity::class,
-        ));
+        throw new \LogicException(sprintf('%s is missing #[RouteIdentity]. Add the attribute and use RouteIdentityTrait.', $entity::class));
     }
 }

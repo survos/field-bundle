@@ -17,15 +17,19 @@ trait QueryBuilderHelperTrait
     {
         $results = $this->createQueryBuilder('s')
             ->select(["s.$field", 'count(s) as count'])
-            ->groupBy('s.' . $field)
+            ->groupBy('s.'.$field)
             ->getQuery()
             ->getArrayResult();
 
         $counts = [];
         foreach ($results as $r) {
             $key = $r[$field] ?? '';
-            if (is_array($key) || $key === null) continue;
-            if (is_bool($key)) $key = $key ? '1' : '0';
+            if (is_array($key) || null === $key) {
+                continue;
+            }
+            if (is_bool($key)) {
+                $key = $key ? '1' : '0';
+            }
             $counts[$key] = (int) $r['count'];
         }
 
@@ -39,14 +43,14 @@ trait QueryBuilderHelperTrait
 
         foreach ($filters as $relation => $value) {
             if ($value) {
-                $qb->join('e.' . $relation, $relation)
+                $qb->join('e.'.$relation, $relation)
                    ->andWhere("e.$relation = :$relation")
                    ->setParameter($relation, $value);
             }
         }
 
         $counts = [];
-        foreach ($qb->groupBy('e.' . $field)->getQuery()->getResult() as $row) {
+        foreach ($qb->groupBy('e.'.$field)->getQuery()->getResult() as $row) {
             // Preserve the empty-string bucket used for NULL groups without implicit key conversion.
             $counts[$row['field'] ?? ''] = (int) $row['c'];
         }

@@ -37,13 +37,15 @@ final class RouteSitemapCommand
     ): int {
         $markdown = $this->builder->render(includeGaps: !$noGaps);
 
-        if ($output !== null && $output !== '') {
+        if (null !== $output && '' !== $output) {
             file_put_contents($output, $markdown);
             $io->success("Wrote sitemap to {$output}");
+
             return Command::SUCCESS;
         }
 
         $io->writeln($markdown);
+
         return Command::SUCCESS;
     }
 }

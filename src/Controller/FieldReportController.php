@@ -31,10 +31,10 @@ final class FieldReportController extends AbstractController
         $data = $this->routeSitemap->toArray();
 
         return $this->render('@SurvosField/report/route_sitemap.html.twig', [
-            'coverage'    => $data['coverage'],
+            'coverage' => $data['coverage'],
             'controllers' => $data['controllers'],
-            'rawUrl'      => $this->generateUrl('survos_routes_sitemap_raw'),
-            'jsonUrl'     => $this->generateUrl('survos_routes_sitemap_json'),
+            'rawUrl' => $this->generateUrl('survos_routes_sitemap_raw'),
+            'jsonUrl' => $this->generateUrl('survos_routes_sitemap_json'),
         ]);
     }
 

@@ -45,7 +45,8 @@ trait RouteIdentityTrait
     }
 
     /**
-     * @param  array<string, mixed>|null $addlParams
+     * @param array<string, mixed>|null $addlParams
+     *
      * @return array<string, mixed>
      */
     #[Groups(['rp', 'transitions', 'searchable'])]
@@ -70,6 +71,7 @@ trait RouteIdentityTrait
     {
         $class ??= static::class;
         $short = (new \ReflectionClass($class))->getShortName();
+
         return strtolower(preg_replace('/(?<!^)([A-Z])/', '_$1', $short) ?? $short);
     }
 }

@@ -17,7 +17,9 @@ use Twig\Extension\GlobalsInterface;
  */
 final class EntityGlobalsExtension extends AbstractExtension implements GlobalsInterface
 {
-    public function __construct(private readonly EntityMetaRegistry $registry) {}
+    public function __construct(private readonly EntityMetaRegistry $registry)
+    {
+    }
 
     public function getGlobals(): array
     {
@@ -28,12 +30,12 @@ final class EntityGlobalsExtension extends AbstractExtension implements GlobalsI
         }
 
         foreach ($this->registry->getAll() as $descriptor) {
-            if ($descriptor->globalKey !== '') {
+            if ('' !== $descriptor->globalKey) {
                 $this->addEntityGlobals($globals, $descriptor->globalKey, $descriptor->class);
             }
 
             $shortKey = $this->shortGlobalKey($descriptor->class);
-            if (count(array_unique($shortKeys[$shortKey] ?? [])) === 1) {
+            if (1 === count(array_unique($shortKeys[$shortKey] ?? []))) {
                 $this->addEntityGlobals($globals, $shortKey, $descriptor->class);
             }
         }
@@ -43,13 +45,13 @@ final class EntityGlobalsExtension extends AbstractExtension implements GlobalsI
 
     /**
      * @param array<string, mixed> $globals
-     * @param class-string $class
+     * @param class-string         $class
      */
     private function addEntityGlobals(array &$globals, string $key, string $class): void
     {
         $globals[$key] = $class;
         foreach ((new \ReflectionClass($class))->getReflectionConstants(\ReflectionClassConstant::IS_PUBLIC) as $constant) {
-            $globals[$key . '_' . $constant->getName()] = $constant->getValue();
+            $globals[$key.'_'.$constant->getName()] = $constant->getValue();
         }
     }
 
@@ -58,6 +60,6 @@ final class EntityGlobalsExtension extends AbstractExtension implements GlobalsI
     {
         $shortName = (new \ReflectionClass($class))->getShortName();
 
-        return 'APP_ENTITY_' . strtoupper((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName));
+        return 'APP_ENTITY_'.strtoupper((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName));
     }
 }

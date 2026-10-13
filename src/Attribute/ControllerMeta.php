@@ -57,13 +57,14 @@ final class ControllerMeta
      * @param list<string>                $tags
      */
     public function __construct(
-        public readonly ?string   $entity          = null,
-        public readonly array     $relatedEntities = [],
-        public readonly array     $params          = [],
-        public readonly ?Audience $audience        = null,
-        public readonly array     $tags            = [],
-        public readonly ?bool     $sitemap         = null,
-        public readonly ?string   $changefreq      = null,
-        public readonly ?float    $priority        = null,
-    ) {}
+        public readonly ?string $entity = null,
+        public readonly array $relatedEntities = [],
+        public readonly array $params = [],
+        public readonly ?Audience $audience = null,
+        public readonly array $tags = [],
+        public readonly ?bool $sitemap = null,
+        public readonly ?string $changefreq = null,
+        public readonly ?float $priority = null,
+    ) {
+    }
 }

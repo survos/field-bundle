@@ -13,9 +13,9 @@ namespace Survos\FieldBundle\Enum;
  */
 enum Audience: string
 {
-    case Public        = 'public';
+    case Public = 'public';
     case Authenticated = 'authenticated';
-    case Admin         = 'admin';
-    case Api           = 'api';
-    case Internal      = 'internal';
+    case Admin = 'admin';
+    case Api = 'api';
+    case Internal = 'internal';
 }

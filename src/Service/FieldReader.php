@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Survos\FieldBundle\Service;
 
 use Survos\FieldBundle\Attribute\Field;
-use Survos\FieldBundle\Enum\Widget;
 use Survos\FieldBundle\Model\FieldDescriptor;
 
 /**
@@ -38,6 +37,7 @@ final class FieldReader
                 return $descriptor;
             }
         }
+
         return null;
     }
 
@@ -48,24 +48,24 @@ final class FieldReader
         $descriptors = [];
 
         // MeiliIndex-derived field sets (optional dependency; all empty if bundle absent)
-        $meiliIndex       = $this->readMeiliIndex($rc);
-        $meiliSearchable  = $meiliIndex ? $this->meiliFieldNames($meiliIndex->searchable)  : [];
-        $meiliFilterable  = $meiliIndex ? $this->meiliFieldNames($meiliIndex->filterable)  : [];
-        $meiliSortable    = $meiliIndex ? $this->meiliFieldNames($meiliIndex->sortable)    : [];
-        $meiliAll         = array_unique(array_merge($meiliSearchable, $meiliFilterable, $meiliSortable));
+        $meiliIndex = $this->readMeiliIndex($rc);
+        $meiliSearchable = $meiliIndex ? $this->meiliFieldNames($meiliIndex->searchable) : [];
+        $meiliFilterable = $meiliIndex ? $this->meiliFieldNames($meiliIndex->filterable) : [];
+        $meiliSortable = $meiliIndex ? $this->meiliFieldNames($meiliIndex->sortable) : [];
+        $meiliAll = array_unique(array_merge($meiliSearchable, $meiliFilterable, $meiliSortable));
 
         // ApiPlatform #[ApiFilter] — the server-side ground truth for sort/search/filter capability
-        $apiFilters    = $this->readApiFilters($rc);
-        $apiSortable   = $apiFilters['sortable'];
+        $apiFilters = $this->readApiFilters($rc);
+        $apiSortable = $apiFilters['sortable'];
         $apiSearchable = $apiFilters['searchable'];
         $apiFilterable = $apiFilters['filterable'];
-        $apiAll        = array_unique(array_merge($apiSortable, $apiSearchable, $apiFilterable));
+        $apiAll = array_unique(array_merge($apiSortable, $apiSearchable, $apiFilterable));
 
         // Gather properties and getter methods that carry #[Field], preserving declaration order.
         // Properties from used traits appear first (PHP reflection contract).
         $members = [
             ...$rc->getProperties(),
-            ...array_filter($rc->getMethods(\ReflectionMethod::IS_PUBLIC), fn (\ReflectionMethod $m) => !$m->isStatic() && $m->getNumberOfRequiredParameters() === 0 && str_starts_with($m->getName(), 'get')),
+            ...array_filter($rc->getMethods(\ReflectionMethod::IS_PUBLIC), fn (\ReflectionMethod $m) => !$m->isStatic() && 0 === $m->getNumberOfRequiredParameters() && str_starts_with($m->getName(), 'get')),
         ];
 
         foreach ($members as $member) {
@@ -78,31 +78,31 @@ final class FieldReader
                 ? $this->readField($member)
                 : $this->readFieldFromMethod($member);
 
-            if ($fieldAttr === null) {
+            if (null === $fieldAttr) {
                 if (!in_array($name, $meiliAll, true) && !in_array($name, $apiAll, true)) {
                     continue;
                 }
                 // Synthesize a Field from MeiliIndex and/or ApiFilter metadata.
                 $fieldAttr = new Field(
                     searchable: in_array($name, $meiliSearchable, true) || in_array($name, $apiSearchable, true),
-                    sortable:   in_array($name, $meiliSortable,   true) || in_array($name, $apiSortable,   true),
-                    filterable: in_array($name, $meiliFilterable,  true) || in_array($name, $apiFilterable,  true),
+                    sortable: in_array($name, $meiliSortable, true) || in_array($name, $apiSortable, true),
+                    filterable: in_array($name, $meiliFilterable, true) || in_array($name, $apiFilterable, true),
                 );
             }
 
-            $type        = $member instanceof \ReflectionProperty
+            $type = $member instanceof \ReflectionProperty
                 ? $this->resolveType($member)
                 : $this->resolveMethodReturnType($member);
             $description = null;
-            $example     = null;
-            $enum        = [];
-            $minimum     = null;
-            $maximum     = null;
-            $maxLength   = null;
-            $pattern     = null;
-            $required    = false;
-            $isUrl       = false;
-            $isEmail     = false;
+            $example = null;
+            $enum = [];
+            $minimum = null;
+            $maximum = null;
+            $maxLength = null;
+            $pattern = null;
+            $required = false;
+            $isUrl = false;
+            $isEmail = false;
 
             // Symfony validation constraints — only applicable to properties
             if ($member instanceof \ReflectionProperty) {
@@ -113,23 +113,23 @@ final class FieldReader
 
             // #[With] from symfony/ai-platform (optional)
             $with = $member instanceof \ReflectionProperty ? $this->readWith($member) : null;
-            if ($with !== null) {
+            if (null !== $with) {
                 $description = $with->description ?? $description;
-                $example     = $with->example     ?? $example;
-                $enum        = $with->enum        ?? $enum;
-                $minimum     = $with->minimum     ?? $minimum;
-                $maximum     = $with->maximum     ?? $maximum;
+                $example = $with->example ?? $example;
+                $enum = $with->enum ?? $enum;
+                $minimum = $with->minimum ?? $minimum;
+                $maximum = $with->maximum ?? $maximum;
             }
 
             // #[ApiProperty] from api-platform (optional)
             $apiProp = $member instanceof \ReflectionProperty ? $this->readApiProperty($member) : null;
-            if ($apiProp !== null) {
+            if (null !== $apiProp) {
                 $description ??= $this->extractApiPropertyDescription($apiProp);
-                $example     ??= $this->extractApiPropertyExample($apiProp);
+                $example ??= $this->extractApiPropertyExample($apiProp);
             }
 
             // Infer enum values from backed enum type
-            if (empty($enum) && $type !== 'string' && enum_exists($type)) {
+            if (empty($enum) && 'string' !== $type && enum_exists($type)) {
                 $rc2 = new \ReflectionEnum($type);
                 if ($rc2->isBacked()) {
                     $enum = array_map(fn ($case) => $case->getBackingValue(), $rc2->getCases());
@@ -137,29 +137,29 @@ final class FieldReader
             }
 
             $descriptors[] = new FieldDescriptor(
-                name:        $name,
-                type:        $type,
-                transKey:    $fieldAttr->transKey,
+                name: $name,
+                type: $type,
+                transKey: $fieldAttr->transKey,
                 description: $description,
-                example:     $example,
-                searchable:  $fieldAttr->searchable || in_array($name, $apiSearchable, true),
-                sortable:    $fieldAttr->sortable   || in_array($name, $apiSortable,   true),
-                filterable:  $fieldAttr->filterable || in_array($name, $apiFilterable,  true),
-                widget:      $fieldAttr->widget,
-                facet:       $fieldAttr->facet,
-                visible:     $fieldAttr->visible,
-                order:       $fieldAttr->order,
-                width:       $fieldAttr->width,
-                group:       $fieldAttr->group,
-                format:      $fieldAttr->format,
-                enum:        $enum,
-                minimum:     $minimum,
-                maximum:     $maximum,
-                maxLength:   $maxLength,
-                pattern:     $pattern,
-                required:    $required,
-                isUrl:       $isUrl,
-                isEmail:     $isEmail,
+                example: $example,
+                searchable: $fieldAttr->searchable || in_array($name, $apiSearchable, true),
+                sortable: $fieldAttr->sortable || in_array($name, $apiSortable, true),
+                filterable: $fieldAttr->filterable || in_array($name, $apiFilterable, true),
+                widget: $fieldAttr->widget,
+                facet: $fieldAttr->facet,
+                visible: $fieldAttr->visible,
+                order: $fieldAttr->order,
+                width: $fieldAttr->width,
+                group: $fieldAttr->group,
+                format: $fieldAttr->format,
+                enum: $enum,
+                minimum: $minimum,
+                maximum: $maximum,
+                maxLength: $maxLength,
+                pattern: $pattern,
+                required: $required,
+                isUrl: $isUrl,
+                isEmail: $isEmail,
             );
         }
 
@@ -213,7 +213,7 @@ final class FieldReader
 
                 case \Symfony\Component\Validator\Constraints\Positive::class:
                 case \Symfony\Component\Validator\Constraints\PositiveOrZero::class:
-                    $minimum ??= ($name === \Symfony\Component\Validator\Constraints\PositiveOrZero::class) ? 0 : 1;
+                    $minimum ??= (\Symfony\Component\Validator\Constraints\PositiveOrZero::class === $name) ? 0 : 1;
                     break;
 
                 case \Symfony\Component\Validator\Constraints\Regex::class:
@@ -227,12 +227,14 @@ final class FieldReader
     private function readField(\ReflectionProperty $property): ?Field
     {
         $attrs = $property->getAttributes(Field::class);
+
         return $attrs ? $attrs[0]->newInstance() : null;
     }
 
     private function readFieldFromMethod(\ReflectionMethod $method): ?Field
     {
         $attrs = $method->getAttributes(Field::class);
+
         return $attrs ? $attrs[0]->newInstance() : null;
     }
 
@@ -242,6 +244,7 @@ final class FieldReader
         if ($type instanceof \ReflectionNamedType) {
             return $type->getName();
         }
+
         return 'string';
     }
 
@@ -251,6 +254,7 @@ final class FieldReader
             return null;
         }
         $attrs = $property->getAttributes(\Symfony\AI\Platform\Contract\JsonSchema\Attribute\With::class);
+
         return $attrs ? $attrs[0]->newInstance() : null;
     }
 
@@ -260,6 +264,7 @@ final class FieldReader
             return null;
         }
         $attrs = $property->getAttributes(\ApiPlatform\Metadata\ApiProperty::class);
+
         return $attrs ? $attrs[0]->newInstance() : null;
     }
 
@@ -292,14 +297,14 @@ final class FieldReader
             return $empty;
         }
 
-        $sortable   = [];
+        $sortable = [];
         $searchable = [];
         $filterable = [];
 
         foreach ($rc->getAttributes(\ApiPlatform\Metadata\ApiFilter::class) as $attr) {
-            $filter      = $attr->newInstance();
+            $filter = $attr->newInstance();
             $filterClass = $filter->filterClass ?? '';
-            $properties  = $filter->properties  ?? [];
+            $properties = $filter->properties ?? [];
 
             $propNames = [];
             foreach ($properties as $key => $value) {
@@ -307,16 +312,16 @@ final class FieldReader
             }
 
             match (true) {
-                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\OrderFilter',  true) => $sortable   = array_merge($sortable,   $propNames),
+                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\OrderFilter', true) => $sortable = array_merge($sortable, $propNames),
                 is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\SearchFilter', true) => $searchable = array_merge($searchable, $propNames),
-                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\ExactFilter',  true) => $filterable = array_merge($filterable, $propNames),
-                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\RangeFilter',  true) => $filterable = array_merge($filterable, $propNames),
+                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\ExactFilter', true) => $filterable = array_merge($filterable, $propNames),
+                is_a($filterClass, 'ApiPlatform\Doctrine\Orm\Filter\RangeFilter', true) => $filterable = array_merge($filterable, $propNames),
                 default => null,
             };
         }
 
         return [
-            'sortable'   => array_unique($sortable),
+            'sortable' => array_unique($sortable),
             'searchable' => array_unique($searchable),
             'filterable' => array_unique($filterable),
         ];
@@ -328,6 +333,7 @@ final class FieldReader
             return null;
         }
         $attrs = $rc->getAttributes(\Survos\MeiliBundle\Metadata\MeiliIndex::class);
+
         return $attrs ? $attrs[0]->newInstance() : null;
     }
 
@@ -340,6 +346,7 @@ final class FieldReader
         if (class_exists(\Survos\MeiliBundle\Metadata\Fields::class) && $value instanceof \Survos\MeiliBundle\Metadata\Fields) {
             return $value->fields;
         }
+
         return array_values(array_filter((array) $value, 'is_string'));
     }
 }

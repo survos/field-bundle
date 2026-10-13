@@ -64,12 +64,12 @@ final class RouteIdentityValueResolver implements ValueResolverInterface
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
         // doctrine/persistence can be installed without a configured Doctrine registry.
-        if ($this->managerRegistry === null) {
+        if (null === $this->managerRegistry) {
             return [];
         }
 
         $class = $argument->getType();
-        if ($class === null || !class_exists($class)) {
+        if (null === $class || !class_exists($class)) {
             return [];
         }
 
@@ -81,33 +81,29 @@ final class RouteIdentityValueResolver implements ValueResolverInterface
         }
 
         $identity = RouteIdentityResolver::lookup($class);
-        if ($identity === null) {
+        if (null === $identity) {
             return [];
         }
 
         // Compound chain (parents) — defer to MapEntity for now (see @todo).
-        if ($identity->parents !== []) {
+        if ([] !== $identity->parents) {
             return [];
         }
 
         $key = $identity->key
-            ?? lcfirst((new \ReflectionClass($class))->getShortName()) . 'Id';
+            ?? lcfirst((new \ReflectionClass($class))->getShortName()).'Id';
 
         $value = $request->attributes->get($key);
-        if ($value === null || $value === '') {
+        if (null === $value || '' === $value) {
             return [];
         }
 
         $entity = $em->getRepository($class)->findOneBy([$identity->field => $value]);
-        if ($entity === null) {
+        if (null === $entity) {
             if (!$argument->isNullable()) {
-                throw new NotFoundHttpException(sprintf(
-                    '%s not found by %s=%s',
-                    (new \ReflectionClass($class))->getShortName(),
-                    $identity->field,
-                    is_scalar($value) ? (string) $value : '<non-scalar>',
-                ));
+                throw new NotFoundHttpException(sprintf('%s not found by %s=%s', (new \ReflectionClass($class))->getShortName(), $identity->field, is_scalar($value) ? (string) $value : '<non-scalar>'));
             }
+
             return [null];
         }
 

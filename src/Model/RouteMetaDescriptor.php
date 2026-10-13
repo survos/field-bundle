@@ -21,29 +21,30 @@ final class RouteMetaDescriptor
      * @param list<string>                $parents
      */
     public function __construct(
-        public readonly string   $name,
-        public readonly string   $path,
-        public readonly array    $methods,
-        public readonly string   $controller,
-        public readonly string   $description,
-        public readonly ?string  $entity          = null,
-        public readonly array    $relatedEntities = [],
-        public readonly array    $params          = [],
-        public readonly Purpose  $purpose         = Purpose::Custom,
-        public readonly ?string  $label           = null,
-        public readonly Audience $audience        = Audience::Authenticated,
-        public readonly ?bool    $sitemap         = null,
-        public readonly ?string  $changefreq      = null,
-        public readonly ?float   $priority        = null,
-        public readonly array    $tags            = [],
-        public readonly array    $parents         = [],
-    ) {}
+        public readonly string $name,
+        public readonly string $path,
+        public readonly array $methods,
+        public readonly string $controller,
+        public readonly string $description,
+        public readonly ?string $entity = null,
+        public readonly array $relatedEntities = [],
+        public readonly array $params = [],
+        public readonly Purpose $purpose = Purpose::Custom,
+        public readonly ?string $label = null,
+        public readonly Audience $audience = Audience::Authenticated,
+        public readonly ?bool $sitemap = null,
+        public readonly ?string $changefreq = null,
+        public readonly ?float $priority = null,
+        public readonly array $tags = [],
+        public readonly array $parents = [],
+    ) {
+    }
 
     /**
      * Effective sitemap inclusion: explicit value if set, else default by audience.
      */
     public function includeInSitemap(): bool
     {
-        return $this->sitemap ?? ($this->audience === Audience::Public);
+        return $this->sitemap ?? (Audience::Public === $this->audience);
     }
 }

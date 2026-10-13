@@ -26,7 +26,8 @@ final class EntityDashboardController extends AbstractController
         // survos/elastic-bundle's ElasticIndexService, duck-typed like the others so field-bundle
         // keeps no dependency on it — apps without Elasticsearch simply get null.
         private readonly ?object $elasticIndexService = null,
-    ) {}
+    ) {
+    }
 
     #[Route('/entity/{code}', name: 'survos_entity_dashboard', methods: ['GET'])]
     public function dashboard(string $code): Response
@@ -45,13 +46,13 @@ final class EntityDashboardController extends AbstractController
             'fields' => $this->fieldReader->getDescriptors($class),
             'constants' => $this->resolveConstants($class),
             'meili' => $this->resolveMeili($class),
-            'meiliRegistryAvailable' => $this->meiliRegistry !== null,
+            'meiliRegistryAvailable' => null !== $this->meiliRegistry,
             'uxSearch' => $this->resolveUxSearch($class, $descriptor->code),
-            'uxSearchRegistryAvailable' => $this->uxSearchRegistry !== null,
+            'uxSearchRegistryAvailable' => null !== $this->uxSearchRegistry,
             'workflows' => $this->resolveWorkflows($class),
-            'workflowRegistryAvailable' => $this->workflowHelper !== null,
+            'workflowRegistryAvailable' => null !== $this->workflowHelper,
             'elastic' => $this->resolveElastic($class),
-            'elasticServiceAvailable' => $this->elasticIndexService !== null,
+            'elasticServiceAvailable' => null !== $this->elasticIndexService,
             'browseUrl' => $this->resolveBrowseUrl($code),
             'constantsUrl' => $this->routeUrl('survos_entity_constants', []),
         ]);
@@ -68,7 +69,7 @@ final class EntityDashboardController extends AbstractController
         $rows = [];
         foreach ($this->registry->getAll() as $descriptor) {
             $keys = [];
-            if ($descriptor->globalKey !== '') {
+            if ('' !== $descriptor->globalKey) {
                 $keys[] = [
                     'name' => $descriptor->globalKey,
                     'type' => 'class',
@@ -77,7 +78,7 @@ final class EntityDashboardController extends AbstractController
             }
 
             $shortKey = $this->shortGlobalKey($descriptor->class);
-            if (count(array_unique($shortKeys[$shortKey] ?? [])) === 1 && $shortKey !== $descriptor->globalKey) {
+            if (1 === count(array_unique($shortKeys[$shortKey] ?? [])) && $shortKey !== $descriptor->globalKey) {
                 $keys[] = [
                     'name' => $shortKey,
                     'type' => 'class alias',
@@ -88,7 +89,7 @@ final class EntityDashboardController extends AbstractController
             foreach ((new \ReflectionClass($descriptor->class))->getReflectionConstants(\ReflectionClassConstant::IS_PUBLIC) as $constant) {
                 foreach ($keys as $key) {
                     $rows[] = [
-                        'name' => $key['name'] . '_' . $constant->getName(),
+                        'name' => $key['name'].'_'.$constant->getName(),
                         'type' => 'constant',
                         'value' => $constant->getValue(),
                         'descriptor' => $descriptor,
@@ -274,7 +275,7 @@ final class EntityDashboardController extends AbstractController
                 'indexName' => $baseName,
                 'workspace' => $workspace,
             ]);
-            if ($url !== null) {
+            if (null !== $url) {
                 $urls[] = ['workspace' => $workspace, 'url' => $url];
             }
         }
@@ -342,6 +343,6 @@ final class EntityDashboardController extends AbstractController
     {
         $shortName = (new \ReflectionClass($class))->getShortName();
 
-        return 'APP_ENTITY_' . strtoupper((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName));
+        return 'APP_ENTITY_'.strtoupper((string) preg_replace('/(?<!^)[A-Z]/', '_$0', $shortName));
     }
 }

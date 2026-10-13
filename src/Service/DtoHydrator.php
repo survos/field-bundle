@@ -18,12 +18,15 @@ final class DtoHydrator
     public function __construct(
         private readonly MappingRegistry $registry,
         private readonly PropertyAccessorInterface $propertyAccessor,
-    ) {}
+    ) {
+    }
 
     /**
      * @template T of object
-     * @param class-string<T> $class
+     *
+     * @param class-string<T>      $class
      * @param array<string, mixed> $row
+     *
      * @return T
      */
     public function hydrate(string $class, array $row): object

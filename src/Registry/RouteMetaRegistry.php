@@ -24,17 +24,17 @@ final class RouteMetaRegistry
     public function __construct(
         private readonly array $descriptors = [],
     ) {
-        $byName   = [];
+        $byName = [];
         $byEntity = [];
 
         foreach ($descriptors as $d) {
             $byName[$d->name] = $d;
-            if ($d->entity !== null) {
+            if (null !== $d->entity) {
                 $byEntity[$d->entity][] = $d;
             }
         }
 
-        $this->byName   = $byName;
+        $this->byName = $byName;
         $this->byEntity = $byEntity;
     }
 
@@ -62,6 +62,7 @@ final class RouteMetaRegistry
                 return $d;
             }
         }
+
         return null;
     }
 

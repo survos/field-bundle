@@ -14,10 +14,10 @@ namespace Survos\FieldBundle\Enum;
  */
 enum Widget: string
 {
-    case Text    = 'text';    // free-text search input
-    case Select  = 'select';  // dropdown of distinct values (enum, relation)
-    case Range   = 'range';   // numeric range with min/max (< >)
-    case Date    = 'date';    // date / datetime range picker
+    case Text = 'text';    // free-text search input
+    case Select = 'select';  // dropdown of distinct values (enum, relation)
+    case Range = 'range';   // numeric range with min/max (< >)
+    case Date = 'date';    // date / datetime range picker
     case Boolean = 'boolean'; // true / false toggle
 
     /**
@@ -29,7 +29,7 @@ enum Widget: string
     {
         return match ($this) {
             self::Select, self::Boolean => true,
-            default                     => false,
+            default => false,
         };
     }
 }

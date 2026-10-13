@@ -31,12 +31,12 @@ final class EntityMetaPass implements CompilerPassInterface
             return;
         }
 
-        $extraDirs   = $this->resolveExtraDirs($container);
+        $extraDirs = $this->resolveExtraDirs($container);
         $descriptors = [];
 
         foreach (EntityAtlasBuilder::build($container, $extraDirs) as $entry) {
             $hits = $entry->attributesOf(EntityMeta::class);
-            if ($hits === []) {
+            if ([] === $hits) {
                 continue;
             }
 
@@ -46,26 +46,25 @@ final class EntityMetaPass implements CompilerPassInterface
             }
 
             $descriptors[] = new EntityMetaDescriptor(
-                class:          $entry->fqcn,
-                label:          $meta->label ?? $entry->shortName,
-                group:          $meta->group,
-                order:          $meta->order,
-                icon:           $meta->icon,
-                iconClass:      $meta->iconClass,
-                description:    $meta->description,
+                class: $entry->fqcn,
+                label: $meta->label ?? $entry->shortName,
+                group: $meta->group,
+                order: $meta->order,
+                icon: $meta->icon,
+                iconClass: $meta->iconClass,
+                description: $meta->description,
                 adminBrowsable: $meta->adminBrowsable,
                 adminShowCount: $meta->adminShowCount,
                 hasApiResource: $entry->hasAttribute('ApiPlatform\\Metadata\\ApiResource'),
-                hasMeiliIndex:  $entry->hasAttribute('Survos\\MeiliBundle\\Metadata\\MeiliIndex'),
-                code:           self::deriveCode($entry->fqcn, $entry->shortName),
-                globalKey:      self::deriveGlobalKey($entry->fqcn),
+                hasMeiliIndex: $entry->hasAttribute('Survos\\MeiliBundle\\Metadata\\MeiliIndex'),
+                code: self::deriveCode($entry->fqcn, $entry->shortName),
+                globalKey: self::deriveGlobalKey($entry->fqcn),
             );
         }
 
         usort(
             $descriptors,
-            static fn (EntityMetaDescriptor $a, EntityMetaDescriptor $b)
-                => [$a->group, $a->order, $a->label] <=> [$b->group, $b->order, $b->label],
+            static fn (EntityMetaDescriptor $a, EntityMetaDescriptor $b) => [$a->group, $a->order, $a->label] <=> [$b->group, $b->order, $b->label],
         );
 
         $definitions = array_map(self::toDefinition(...), $descriptors);
@@ -79,19 +78,19 @@ final class EntityMetaPass implements CompilerPassInterface
     private static function toDefinition(EntityMetaDescriptor $d): Definition
     {
         return new Definition(EntityMetaDescriptor::class, [
-            '$class'          => $d->class,
-            '$label'          => $d->label,
-            '$group'          => $d->group,
-            '$order'          => $d->order,
-            '$icon'           => $d->icon,
-            '$iconClass'      => $d->iconClass,
-            '$description'    => $d->description,
+            '$class' => $d->class,
+            '$label' => $d->label,
+            '$group' => $d->group,
+            '$order' => $d->order,
+            '$icon' => $d->icon,
+            '$iconClass' => $d->iconClass,
+            '$description' => $d->description,
             '$adminBrowsable' => $d->adminBrowsable,
             '$adminShowCount' => $d->adminShowCount,
             '$hasApiResource' => $d->hasApiResource,
-            '$hasMeiliIndex'  => $d->hasMeiliIndex,
-            '$code'           => $d->code,
-            '$globalKey'      => $d->globalKey,
+            '$hasMeiliIndex' => $d->hasMeiliIndex,
+            '$code' => $d->code,
+            '$globalKey' => $d->globalKey,
         ]);
     }
 
@@ -106,7 +105,10 @@ final class EntityMetaPass implements CompilerPassInterface
         $parts = explode('\\', ltrim($fqcn, '\\'));
         $prefix = 'App';
         foreach ($parts as $part) {
-            if ($part === 'App') { $prefix = 'App'; break; }
+            if ('App' === $part) {
+                $prefix = 'App';
+                break;
+            }
             if (str_ends_with($part, 'Bundle')) {
                 $prefix = substr($part, 0, -6);
                 break;
@@ -114,7 +116,7 @@ final class EntityMetaPass implements CompilerPassInterface
         }
         $shortName = (new \ReflectionClass($fqcn))->getShortName();
 
-        return u($prefix)->snake()->toString() . '_' . u($shortName)->snake()->toString();
+        return u($prefix)->snake()->toString().'_'.u($shortName)->snake()->toString();
     }
 
     private static function deriveCode(string $fqcn, string $shortName): string
@@ -122,14 +124,17 @@ final class EntityMetaPass implements CompilerPassInterface
         $parts = explode('\\', ltrim($fqcn, '\\'));
         $prefix = 'App';
         foreach ($parts as $part) {
-            if ($part === 'App') { $prefix = 'App'; break; }
+            if ('App' === $part) {
+                $prefix = 'App';
+                break;
+            }
             if (str_ends_with($part, 'Bundle')) {
                 $prefix = substr($part, 0, -6);
                 break;
             }
         }
 
-        return u($prefix)->snake()->toString() . '_' . u($shortName)->snake()->toString();
+        return u($prefix)->snake()->toString().'_'.u($shortName)->snake()->toString();
     }
 
     /** App\Entity\Song -> "APP_ENTITY_SONG"; Survos\PixieBundle\Entity\Foo -> "SURVOS_PIXIE_BUNDLE_ENTITY_FOO". */
