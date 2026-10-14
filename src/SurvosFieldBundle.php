@@ -82,7 +82,7 @@ final class SurvosFieldBundle extends AbstractSurvosBundle
             $services->set(RouteIdentityValueResolver::class);
         }
 
-        if (class_exists(\Survos\TablerBundle\Event\MenuEvent::class)) {
+        if (class_exists(\Survos\TablerBundle\Menu\AbstractAdminMenuSubscriber::class)) {
             $container->services()
                 ->set(FieldMenuSubscriber::class)
                 ->autowire()
