@@ -16,6 +16,7 @@ use Survos\FieldBundle\Enum\Widget;
  */
 final class FieldDescriptor
 {
+    /** @param list<scalar|null> $enum Allowed field values. */
     public function __construct(
         public readonly string $name,
         public readonly string $type = 'string',

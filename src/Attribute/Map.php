@@ -22,8 +22,8 @@ class Map
      * @param string|null              $if           conditional: 'isset' = skip if resolved value is null
      * @param string|null              $delim        delimiter for splitting a string into an array property
      * @param int                      $priority     mapper priority when multiple sources exist; higher wins
-     * @param string[]                 $when         only apply when context['dataset'] is in this list
-     * @param string[]                 $except       skip when context['dataset'] is in this list
+     * @param array<array-key, string> $when         only apply when context['dataset'] is in this list
+     * @param array<array-key, string> $except       skip when context['dataset'] is in this list
      * @param bool                     $facet        meilisearch filterableAttributes
      * @param bool                     $sortable     meilisearch sortableAttributes
      * @param bool                     $searchable   meilisearch searchableAttributes

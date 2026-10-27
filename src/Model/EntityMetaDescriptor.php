@@ -10,6 +10,7 @@ namespace Survos\FieldBundle\Model;
  */
 final class EntityMetaDescriptor
 {
+    /** @param array<string, EntityViewDescriptor> $views View code to compiled view metadata. */
     public function __construct(
         public readonly string $class,
         public readonly string $label,
@@ -44,7 +45,7 @@ final class EntityMetaDescriptor
         return $this->views[$code] ?? null;
     }
 
-    /** @return EntityViewDescriptor[] */
+    /** @return list<EntityViewDescriptor> */
     public function viewChoices(): array
     {
         return array_values($this->views);
