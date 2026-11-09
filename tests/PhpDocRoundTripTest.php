@@ -37,14 +37,7 @@ final class PhpDocRoundTripTest extends TestCase
 
     private function serializer(): Serializer
     {
-        // These are integration checks for consuming apps with PHPDoc-aware serialization enabled.
-        if (!class_exists(PhpStanExtractor::class)
-            || !class_exists(\PHPStan\PhpDocParser\Parser\PhpDocParser::class)
-            || !class_exists(\phpDocumentor\Reflection\Types\ContextFactory::class)
-            || !class_exists(Serializer::class)) {
-            self::markTestSkipped('Run with a consuming app providing Serializer, PropertyInfo and the PHPDoc parsers.');
-        }
-
+        // Required dev dependencies make these integration checks run in standalone bundle tests.
         $phpDoc = new PhpStanExtractor();
         $reflection = new ReflectionExtractor();
         $types = new PropertyInfoExtractor([], [new ConstructorExtractor([$phpDoc]), $phpDoc, $reflection]);

@@ -49,9 +49,70 @@ public AiTaskStatus $status;
 
 ## Installation
 
+Requires **PHP 8.5+ and Symfony 8.2+ (8.x)**. Symfony 7.4 and 8.1 are no longer supported.
+
 ```bash
 composer require survos/field-bundle
 ```
+
+
+## Forms: use Symfony attributes
+
+Use Symfony 8.2's `#[AsFormType]` and `#[FormField]` for forms, and Symfony Validator
+attributes for validation. `#[Field]` is only needed for Survos search/grid metadata;
+it does not declare a form field or configure Symfony's form options.
+
+Install `symfony/form:^8.2` in the consuming application and enable FrameworkBundle's
+form integration. Before the stable 8.2 release, the consuming application's root
+Composer configuration must allow the 8.2 prereleases (and any Symfony Flex version
+restriction must permit 8.2). A library's stability flags do not opt its consumers in.
+
+```php
+use Survos\FieldBundle\Attribute\Field;
+use Symfony\Component\Form\Attribute\AsFormType;
+use Symfony\Component\Form\Attribute\FormField;
+use Symfony\Component\Validator\Constraints as Assert;
+
+#[AsFormType]
+final readonly class EventInput
+{
+    public function __construct(
+        #[FormField(options: ['label' => 'event.title'])]
+        #[Assert\NotBlank]
+        #[Field(searchable: true, sortable: true)]
+        public string $title,
+
+        #[FormField]
+        public ?int $capacity = null,
+
+        #[FormField]
+        public ?\DateTimeImmutable $startsAt = null,
+    ) {
+    }
+}
+```
+
+Register the DTO as an autoconfigured service so Symfony discovers the form attributes.
+In a controller, use `$this->createForm(EventInput::class, $input)` and retrieve the
+submitted result with `$form->getData()` after submission and validation. Editing promoted
+readonly properties can return a new DTO rather than mutating the original.
+
+Leave the form type unspecified when Symfony can infer it. Symfony owns type guessing,
+required/empty-value handling and constructor mapping; `FieldDescriptor::inputType()`
+is only a lightweight HTML hint, not a Symfony Form configuration API. Explicit form
+types still need explicit `empty_data` where applicable. Form labels/options belong in
+`#[FormField]`; Survos grid translation overrides remain in `#[Field(transKey: ...)]`.
+`Widget::Range`, for example, describes a search filter, not an edit-form input.
+
+See [Symfony's attribute-based forms](https://symfony.com/blog/new-in-symfony-8-2-attribute-based-forms)
+and [forms that read your types](https://symfony.com/blog/new-in-symfony-8-2-forms-that-read-your-types).
+
+### Serialization checks
+
+PHPDoc collection types are runtime metadata for Serializer consumers. Keep both
+constructor and property annotations accurate. The bundle's development dependencies
+include Serializer, PropertyInfo and their PHPDoc parsers, so `PhpDocRoundTripTest`
+runs rather than skipping when those packages are missing.
 
 ---
 
@@ -432,9 +493,9 @@ $d->inputType()             // HTML input type: 'email'|'url'|'number'|'datetime
 
 ---
 
-## Zero required dependencies
+## Lightweight metadata
 
-`#[Field]` and `Widget` have no external dependencies — just PHP 8.4. `FieldReader` enhances output progressively based on what packages are installed.
+`#[Field]` and `Widget` themselves have no external dependencies beyond PHP 8.5. The bundle requires Symfony 8.2 and its declared Survos dependencies. `FieldReader` enhances output progressively based on what packages are installed.
 
 ---
 

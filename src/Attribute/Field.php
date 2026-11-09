@@ -13,6 +13,7 @@ use Survos\FieldBundle\Enum\Widget;
  * the 'fields' translation domain — set $transKey only to override the key.
  *
  * This attribute is intentionally orthogonal to:
+ *   - #[FormField]    → form fields and options        (symfony/form 8.2+)
  *   - #[ApiProperty]  → OpenAPI / API documentation  (api-platform)
  *   - #[With]         → JSON Schema constraints for LLMs (symfony/ai)
  *   - #[ORM\Column]   → database storage              (doctrine)
