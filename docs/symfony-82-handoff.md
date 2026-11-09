@@ -33,42 +33,43 @@ It checks actual EntityViewDescriptor reconstruction and mapper key preservation
 - Before stable 8.2, the consuming root project must explicitly permit prereleases;
   a dependency's stability settings do not opt the root project in.
 
-## Recommended pilot
+## Completed EasyAdmin pilot
 
-Use the existing local EasyAdmin demo at /Users/tac/tacman/easyadmin-demo.
-Its origin is https://github.com/EasyCorp/easyadmin-demo.git. Its
-vendor/survos/ez-bundle is already linked to /Users/tac/sites/mono/bu/ez-bundle.
-It contains the recent EZ menu work: recent-page history, locale integration,
-category page navigation and a UI Kit action in src/EventListener/EzDemoMenu.php.
+The demo at `/Users/tac/tacman/easyadmin-demo` now has a `demo` branch, upgraded to
+Symfony 8.2.0-BETA1, Stimulus 3.7 and Turbo 3.7. Its existing EZ menu integration
+was committed as `212c0e4`; EZ itself was committed as `96f30acc7`.
 
-Suggested first feature: a Publication settings custom admin action backed by a
-readonly DTO with Symfony AsFormType, FormField and Validator attributes. The
-existing src/Controller/Admin/PostCrudController.php has publish/unpublish/archive
-actions; Post already has status and publishedAt. Define desired publication
-semantics explicitly; a future timestamp alone must not imply a scheduler exists.
-Render the form within the EZ admin layout and obtain the result from form->getData().
+`src/Dto/PublicationSettings.php` uses native AsFormType/FormField and Validator
+attributes. A custom Post CRUD action renders it in the existing EZ admin layout.
+Symfony infers the nullable immutable date and boolean checkbox, accepts an empty
+date as null, and reconstructs a new readonly DTO on submission. The controller
+reads `form->getData()` and explicitly applies the three values to the entity.
+The enum uses EnumType explicitly for its class and translated choice labels.
+No custom form type, data mapper, hydrator, or EZ form adapter was necessary.
 
-This is a proposal, not implemented work. The demo currently restricts Symfony via
-extra.symfony.require = 8.1.* and needs an explicit 8.2 upgrade. It already contains
-uncommitted work in Composer files, controllers, bundle config, tests, translations,
-and its SQLite database, plus new menu files. Preserve those changes. This session
-only inspected the demo.
+Publication status takes effect immediately. A published post requires a date;
+future publication dates are rejected. Scheduled status remains metadata and does
+not create a scheduler or alter the existing scheduledAt field.
+
+The action uses `{entityId}` with `#[MapEntity(id: 'entityId')]`: mapped route syntax
+`{entityId:post.id}` made EasyAdmin's locale URL generation lose the identifier.
+The functional test verifies both header locale links and successful persistence.
+
+Tests cover inferred types, null handling, readonly reconstruction, invalid enum and
+date input, future dates, required publication dates, CSRF rejection and persistence.
+The existing demo tests also run under 8.2 beta. Test writes restore the original
+post settings. Local database changes and generated config references are not source
+changes for this pilot.
 
 ## EZ integration boundaries
 
-EzField contains form-adjacent label/help/type metadata, but also admin-specific
-visibility, ordering, filtering and linking. AbstractEzCrudController reads EzService
-metadata and constructs EasyAdmin fields using Doctrine types. Adding FormField
-alone will not cause that CRUD pipeline to consume Symfony's attribute-based forms.
+This pilot validates a custom DTO action, not automatic CRUD field generation.
+EZ still reads EzField metadata and Doctrine types; FieldReader still supplies
+search/grid metadata. Adding FormField to an entity does not change that pipeline.
+No runtime changes to ez-bundle or field-bundle were needed for the pilot.
 
-Start with the DTO custom action, verify native type guessing, nullable dates,
-validation and readonly reconstruction, then identify a concrete reusable EZ adapter
-if needed. Keep Symfony responsible for form creation/submission; keep Survos-only
-search and admin metadata. No changes to ez-bundle were made in this session.
-
-Continue on main; do not create a branch without the user's confirmation. Read the
-target repository's instructions before implementation. Persistent bundle changes
-belong in mono, not vendor; retain the existing monolink workflow.
+Continue on main for mono and demo for this app. Persistent bundle changes belong
+in mono, not vendor; retain the existing monolink workflow.
 
 ## Sources
 
